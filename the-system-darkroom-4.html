@@ -1,0 +1,4029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>the system</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --black:   #070608;
+  --dark:    #0d0b0e;
+  --surface: #121014;
+  --border:  #1e1820;
+  --border2: #2a2030;
+  --ink:     #d8d0c8;
+  --ink-2:   #9a9290;
+  --ink-3:   #5a5450;
+  --ink-4:   #2e2c2a;
+  --warm:    #c8903a;
+  --warm-2:  #e8a848;
+  --warm-dim:#6a4818;
+  --red:     #e02a18;
+  --red-dim: #6a1408;
+  --train:   #38a8cc;
+  --train-dim:#184858;
+  --sim:     #cc7a38;
+  --sim-dim: #583018;
+  --form:    #38ccaa;
+  --form-dim:#185848;
+  --flow:    #cc38aa;
+  --flow-dim:#581840;
+  --load:    #4a82cc;
+  --aim:     #c8902a;
+  --fire:    #e83a20;
+  --reload:  #38a870;
+  --map:     #8a5acc;
+  --line:    rgba(204,46,24,0.08);
+  --line-2:  rgba(204,46,24,0.15);
+}
+
+html, body { height: 100%; }
+
+body {
+  background: var(--black);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── LIVING CANVAS — behind everything ── */
+#canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
+/* ── GHOST WORDS ── */
+#ghost-layer {
+  position: fixed; inset: 0;
+  z-index: 1; pointer-events: none; overflow: hidden;
+}
+.ghost {
+  position: absolute;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  color: var(--warm);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 4s ease;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+/* ── ALL SCREENS ── */
+.screen {
+  display: none;
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+}
+.screen.on { display: block; }
+
+/* ── ENTRY ── */
+#entry {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 0 32px;
+  animation: rise 0.8s ease both;
+}
+
+.entry-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 32px;
+}
+
+.entry-eyebrow .sess {
+  color: var(--ink-4);
+  margin-left: 10px;
+  letter-spacing: 0.1em;
+}
+
+/* The quote */
+.quote-block {
+  margin-bottom: 48px;
+  padding-left: 14px;
+  border-left: 1px solid var(--red-dim);
+  transition: border-color 1.5s ease;
+}
+
+.quote-text {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(14px, 2.2vw, 17px);
+  font-style: italic;
+  color: var(--ink-2);
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  transition: color 1.5s ease;
+  margin-bottom: 4px;
+}
+
+.quote-legendary {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-style: normal;
+  font-size: clamp(18px, 3vw, 26px);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--red);
+  transition: color 1.5s ease, text-shadow 1.5s ease;
+  line-height: 1;
+  text-shadow: 0 0 14px rgba(224,42,24,0.3);
+}
+
+/* Entry question */
+.entry-q {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(20px, 3.5vw, 28px);
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 48px;
+  line-height: 1.3;
+}
+
+/* Doors */
+.doors {
+  border-top: 1px solid var(--border);
+}
+
+.door {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: start;
+  gap: 0;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  background: none;
+  border-left: none; border-right: none;
+  text-align: left;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+.door:hover { background: rgba(200,144,58,0.03); }
+.door:hover .door-letter { opacity: 1; }
+
+.door-letter {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+  padding-top: 2px;
+  opacity: 0.4;
+  transition: opacity 0.2s, color 0.2s;
+  font-family: 'DM Mono', monospace;
+}
+
+.door[data-c="load"]:hover  .door-letter { color: var(--load);   opacity: 1; }
+.door[data-c="map"]:hover   .door-letter { color: var(--map);    opacity: 1; }
+.door[data-c="aim"]:hover   .door-letter { color: var(--aim);    opacity: 1; }
+.door[data-c="fire"]:hover  .door-letter { color: var(--fire);   opacity: 1; }
+.door[data-c="reload"]:hover .door-letter { color: var(--reload); opacity: 1; }
+
+.door-body {}
+.door-name {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 3px;
+}
+.door-desc {
+  font-family: 'Instrument Serif', serif;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ink-3);
+  line-height: 1.45;
+  transition: color 0.2s;
+}
+.door:hover .door-desc { color: var(--ink-2); }
+
+.door-count {
+  font-size: 8px;
+  color: var(--ink-4);
+  align-self: center;
+  padding-right: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── APP ── */
+#app { display: none; }
+#app.on { display: block; }
+
+/* Nav */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 44px;
+  background: rgba(7,6,8,0.94);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: stretch;
+}
+
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* chaos dot */
+.chaos-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--ink-4);
+  margin: auto 16px;
+  flex-shrink: 0;
+  transition: background 2s ease, box-shadow 2s ease;
+}
+
+.nav-tabs { display: flex; flex: 1; }
+
+.nav-tab {
+  flex: 1;
+  background: none; border: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  cursor: pointer;
+  transition: color 0.2s;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+
+.nav-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px; opacity: 0;
+  transition: opacity 0.2s;
+}
+.nav-tab[data-c="load"]::after   { background: var(--load); }
+.nav-tab[data-c="map"]::after    { background: var(--map); }
+.nav-tab[data-c="aim"]::after    { background: var(--aim); }
+.nav-tab[data-c="fire"]::after   { background: var(--fire); }
+.nav-tab[data-c="reload"]::after { background: var(--reload); }
+.nav-tab.on { color: var(--ink); }
+.nav-tab.on::after { opacity: 1; }
+.nav-tab:hover { color: var(--ink-2); }
+
+/* ── CHAMBERS ── */
+.chamber {
+  display: none;
+  padding-top: 44px;
+  min-height: 100vh;
+}
+.chamber.on {
+  display: block;
+  animation: rise 0.4s ease both;
+}
+
+.ch-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 52px 32px 120px;
+}
+
+/* Chapter mark */
+.ch-mark {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ch-n {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: var(--ink-4);
+}
+
+.ch-name {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+#ch-load   .ch-name { color: var(--load);   }
+#ch-map    .ch-name { color: var(--map);    }
+#ch-aim    .ch-name { color: var(--aim);    }
+#ch-fire   .ch-name { color: var(--fire);   }
+#ch-reload .ch-name { color: var(--reload); }
+#ch-train  .ch-name { color: var(--train);  }
+#ch-sim    .ch-name { color: var(--sim);    }
+#ch-formulas .ch-name { color: var(--form); }
+#ch-flow     .ch-name { color: var(--flow); }
+
+.ch-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+.unresolved {
+  font-size: 7px; letter-spacing: 0.2em;
+  color: var(--fire); opacity: 0;
+  transition: opacity 0.5s;
+}
+
+/* Prompt */
+.ch-prompt {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(17px, 2.8vw, 22px);
+  font-style: italic;
+  color: var(--ink-2);
+  margin-bottom: 32px;
+  line-height: 1.55;
+}
+
+/* Carry */
+.carry {
+  display: none;
+  border-left: 1px solid var(--border2);
+  padding: 10px 14px;
+  margin-bottom: 24px;
+}
+.carry.on { display: block; }
+.carry-label {
+  font-size: 7px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 5px;
+}
+#ch-aim  .carry-label { color: var(--aim); }
+#ch-fire .carry-label { color: var(--fire); }
+#ch-map  .carry-label { color: var(--map); }
+.carry-text {
+  font-family: 'Instrument Serif', serif;
+  font-size: 13px; font-style: italic;
+  color: var(--ink-3); line-height: 1.5;
+}
+
+/* Old load ghost in Fire — Chekhov */
+.gun-ghost {
+  display: none;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  border-left: 1px solid var(--fire);
+  opacity: 0.5;
+}
+.gun-ghost.on { display: block; animation: rise 1.2s ease both; }
+.gun-ghost-label {
+  font-size: 7px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--fire); margin-bottom: 5px; opacity: 0.7;
+}
+.gun-ghost-text {
+  font-family: 'Instrument Serif', serif;
+  font-size: 13px; font-style: italic;
+  color: var(--ink-3); line-height: 1.5;
+}
+
+/* Field ghost — past entry behind input */
+.field-wrap { position: relative; }
+.field-bg {
+  position: absolute; inset: 0;
+  padding: 18px 0;
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px; font-style: italic;
+  line-height: 1.75; color: var(--ink-4);
+  pointer-events: none; overflow: hidden;
+  opacity: 0; transition: opacity 1.2s ease;
+  word-break: break-word; white-space: pre-wrap;
+  z-index: 0;
+}
+.field-bg.on { opacity: 0.18; }
+
+/* Input */
+.field {
+  width: 100%; background: transparent;
+  border: none; border-bottom: 1px solid var(--border);
+  color: var(--ink);
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px; font-style: italic;
+  padding: 18px 0; resize: none; outline: none;
+  line-height: 1.75; transition: border-color 0.25s;
+  position: relative; z-index: 1;
+  caret-color: var(--warm);
+}
+.field:focus { border-bottom-color: var(--border2); }
+.field::placeholder { color: var(--ink-4); }
+
+/* Tags */
+.section-label {
+  font-size: 7px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--ink-4); margin: 22px 0 10px;
+}
+
+.tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 22px; }
+
+.tag {
+  background: none; border: 1px solid var(--border);
+  color: var(--ink-3); font-family: 'DM Mono', monospace;
+  font-size: 8px; letter-spacing: 0.1em;
+  padding: 5px 10px; cursor: pointer; transition: all 0.15s;
+}
+.tag:hover { border-color: var(--border2); color: var(--ink-2); }
+#ch-load   .tag.on { border-color: var(--load);   color: var(--load); }
+#ch-map    .tag.on { border-color: var(--map);    color: var(--map); }
+#ch-aim    .tag.on { border-color: var(--aim);    color: var(--aim); }
+#ch-fire   .tag.on { border-color: var(--fire);   color: var(--fire); }
+#ch-reload .tag.on { border-color: var(--reload); color: var(--reload); }
+
+/* Stakes */
+.stakes { display: flex; gap: 4px; margin-bottom: 22px; }
+.stake {
+  flex: 1; background: none; border: 1px solid var(--border);
+  color: var(--ink-3); font-family: 'DM Mono', monospace;
+  font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 8px 4px; cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.stake.on { border-color: var(--aim); color: var(--aim); }
+
+/* Fire modes */
+.fmodes {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); margin-bottom: 22px;
+}
+.fmode { background: var(--black); padding: 14px 15px; cursor: pointer; transition: background 0.15s; }
+.fmode:hover, .fmode.on { background: var(--surface); }
+.fmode-name {
+  font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 3px; transition: color 0.15s;
+}
+.fmode.on .fmode-name { color: var(--fire); }
+.fmode-desc { font-family: 'Instrument Serif', serif; font-size: 12px; font-style: italic; color: var(--ink-4); line-height: 1.4; }
+
+/* Actions */
+.actions { display: flex; align-items: center; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
+
+.btn {
+  background: none; font-family: 'DM Mono', monospace;
+  font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase;
+  padding: 9px 18px; cursor: pointer; transition: all 0.15s;
+  border: 1px solid var(--ink-3); color: var(--ink-3);
+}
+.btn:hover { background: var(--ink-3); color: var(--black); }
+.btn:disabled { opacity: 0.25; cursor: not-allowed; }
+.btn:disabled:hover { background: none; color: var(--ink-3); }
+
+#ch-load   .btn { border-color: var(--load);   color: var(--load); }
+#ch-load   .btn:hover { background: var(--load);   color: var(--black); }
+#ch-map    .btn { border-color: var(--map);    color: var(--map); }
+#ch-map    .btn:hover { background: var(--map);    color: #fff; }
+#ch-aim    .btn { border-color: var(--aim);    color: var(--aim); }
+#ch-aim    .btn:hover { background: var(--aim);    color: var(--black); }
+#ch-fire   .btn { border-color: var(--fire);   color: var(--fire); }
+#ch-fire   .btn:hover { background: var(--fire);   color: #fff; }
+#ch-reload .btn { border-color: var(--reload); color: var(--reload); }
+#ch-reload .btn:hover { background: var(--reload); color: var(--black); }
+
+.btn-ghost {
+  background: none; border: none;
+  color: var(--ink-4); font-family: 'DM Mono', monospace;
+  font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 9px 0; cursor: pointer; transition: color 0.15s;
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: var(--border);
+}
+.btn-ghost:hover { color: var(--ink-2); }
+
+/* Thinking */
+.thinking {
+  display: none; align-items: center; gap: 10px;
+  padding: 18px 0; color: var(--ink-4);
+  font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+}
+.thinking.on { display: flex; }
+.t-dots { display: flex; gap: 4px; }
+.t-dot {
+  width: 3px; height: 3px; border-radius: 50%;
+  background: var(--warm-dim); animation: blink 1.4s ease infinite;
+}
+.t-dot:nth-child(2) { animation-delay: 0.25s; }
+.t-dot:nth-child(3) { animation-delay: 0.5s; }
+
+/* Response */
+.resp { display: none; margin-top: 36px; animation: rise 0.4s ease both; }
+.resp.on { display: block; }
+.resp-label {
+  font-size: 7px; letter-spacing: 0.35em; text-transform: uppercase;
+  color: var(--ink-4); padding-bottom: 14px;
+  border-bottom: 1px solid var(--border); margin-bottom: 20px;
+}
+.resp-body {
+  font-family: 'Instrument Serif', serif;
+  font-size: 17px; line-height: 1.9;
+  color: var(--ink); white-space: pre-wrap;
+}
+.resp-body strong { color: var(--ink); font-weight: 600; }
+.resp-body em { font-style: italic; color: var(--warm); }
+.resp-actions { margin-top: 20px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* ─── MAP SPECIFIC ─── */
+.wave-bar-row {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 24px; margin-bottom: 8px;
+}
+.wbar {
+  width: 4px; border-radius: 1px;
+  background: var(--map); opacity: 0.3;
+  transition: height 0.5s ease, opacity 0.5s ease;
+}
+.wave-note {
+  font-family: 'Instrument Serif', serif; font-style: italic;
+  font-size: 13px; color: var(--ink-3); margin-bottom: 24px; line-height: 1.5;
+}
+
+.var-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.var-card {
+  border: 1px solid var(--border); padding: 12px 14px;
+  position: relative; transition: border-color 0.2s; background: var(--surface);
+}
+.var-card:focus-within { border-color: var(--map); }
+.var-card-label {
+  font-size: 7px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 5px;
+}
+.var-card-label span { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--map); margin-right: 5px; }
+.var-input {
+  width: 100%; background: none; border: none; color: var(--ink);
+  font-family: 'Instrument Serif', serif; font-size: 13px; font-style: italic;
+  outline: none; line-height: 1.5; resize: none;
+}
+.var-input::placeholder { color: var(--ink-4); }
+.var-known {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 6px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-4); cursor: pointer; border: 1px solid var(--border);
+  padding: 2px 5px; background: none; transition: all 0.15s;
+}
+.var-known.known   { color: var(--reload); border-color: var(--reload); }
+.var-known.unknown { color: var(--fire);   border-color: var(--fire); }
+
+.add-var {
+  width: 100%; border: 1px dashed var(--border); background: none;
+  color: var(--ink-4); font-family: 'DM Mono', monospace;
+  font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 10px; cursor: pointer; transition: all 0.15s; margin-bottom: 20px;
+}
+.add-var:hover { border-color: var(--map); color: var(--map); }
+
+.dep-row {
+  display: grid; grid-template-columns: 1fr auto 1fr auto;
+  gap: 6px; align-items: center; margin-bottom: 7px;
+}
+.dep-sel {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--ink-2); font-family: 'DM Mono', monospace;
+  font-size: 8px; padding: 7px 8px; outline: none;
+}
+.dep-arrow { font-size: 10px; color: var(--ink-4); text-align: center; }
+.dep-rm {
+  background: none; border: none; color: var(--ink-4);
+  font-size: 14px; cursor: pointer; padding: 0 4px; transition: color 0.15s; line-height: 1;
+}
+.dep-rm:hover { color: var(--fire); }
+
+.map-resp-label {
+  font-size: 7px; letter-spacing: 0.35em; text-transform: uppercase;
+  color: var(--map); padding-bottom: 14px;
+  border-bottom: 1px solid rgba(138,90,204,0.2); margin-bottom: 20px;
+}
+
+/* ─── HISTORY ─── */
+.sep { height: 1px; background: var(--border); margin: 48px 0; }
+
+.hist-label {
+  font-size: 7px; letter-spacing: 0.35em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 14px;
+}
+.hist-list {}
+.hist-row {
+  display: grid; grid-template-columns: 24px 1fr auto;
+  gap: 12px; align-items: baseline;
+  padding: 13px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; opacity: 0.4; transition: opacity 0.15s;
+}
+.hist-row:hover { opacity: 1; }
+.hist-row.unr .hist-i { color: var(--fire); }
+.hist-i { font-size: 7px; color: var(--ink-4); }
+.hist-t { font-family: 'Instrument Serif', serif; font-size: 13px; font-style: italic; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-d { font-size: 7px; color: var(--ink-4); white-space: nowrap; }
+
+.traj { display: flex; gap: 3px; margin: 20px 0 6px; flex-wrap: wrap; }
+.traj-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); }
+.traj-dot.load-d   { background: var(--load); opacity: 0.5; }
+.traj-dot.map-d    { background: var(--map);  opacity: 0.5; }
+.traj-dot.aim-d    { background: var(--aim);  opacity: 0.5; }
+.traj-dot.fire-d   { background: var(--fire); opacity: 0.5; }
+.traj-dot.reload-d { background: var(--reload); opacity: 0.5; }
+
+.traj-note { font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-4); margin-bottom: 28px; }
+
+.empty { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--ink-4); font-size: 14px; padding: 20px 0; }
+
+
+
+
+.formula-card {
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.formula-card:hover { border-color: var(--border2); }
+
+.formula-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  cursor: pointer;
+  background: none;
+  transition: background 0.15s;
+}
+.formula-header:hover { background: rgba(56,204,170,0.02); }
+
+.formula-name {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 3px;
+}
+.formula-source {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-4);
+}
+.formula-eq {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--form);
+  letter-spacing: 0.04em;
+  max-width: 180px;
+  text-align: right;
+}
+.chevron-f {
+  font-size: 10px;
+  color: var(--ink-4);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.formula-body {
+  padding: 0 18px 20px;
+  border-top: 1px solid var(--border);
+  animation: rise 0.3s ease both;
+}
+
+.sim-type {
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: none;
+}
+.sim-type:hover { border-color: var(--sim); background: rgba(204,122,56,0.03); }
+.sim-type.on { border-color: var(--sim); background: rgba(204,122,56,0.06); }
+.sim-type.on div:first-child { color: var(--sim) !important; }
+
+.sim-msg {
+  padding: 12px 16px;
+  font-family: 'Instrument Serif', serif;
+  font-size: 15px;
+  line-height: 1.7;
+  border-radius: 0;
+}
+.sim-msg.them {
+  background: rgba(204,122,56,0.05);
+  border-left: 2px solid var(--sim);
+  color: var(--ink);
+}
+.sim-msg.you {
+  background: rgba(255,255,255,0.02);
+  border-left: 2px solid var(--border2);
+  color: var(--ink-2);
+  font-style: italic;
+}
+.sim-msg-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  font-style: normal;
+}
+
+.ex-tab {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--ink-4);
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ex-tab:hover { border-color: var(--train); color: var(--train); }
+.ex-tab.on { border-color: var(--train); color: var(--train); background: rgba(56,168,204,0.06); }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 0.2; }
+  50%       { opacity: 1; }
+}
+
+@media (max-width: 560px) {
+  .nav-brand { display: none; }
+  .fmodes, .var-grid { grid-template-columns: 1fr; }
+  .stakes { flex-wrap: wrap; }
+  #entry, .ch-wrap { padding-left: 20px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div id="ghost-layer"></div>
+
+<!-- ══ ENTRY ══ -->
+<div id="entry" class="screen on">
+
+  <div class="entry-eyebrow">
+    the system
+    <span class="sess" id="sess-label"></span>
+  </div>
+
+  <div class="quote-block" id="quote-block">
+    <div class="quote-text">Different points. Different momentum. Same game, just</div>
+    <span class="quote-legendary" id="leg-word">LEGENDARY</span>
+  </div>
+
+  <div class="entry-q" id="entry-q">Where is your mind right now?</div>
+
+  <div class="doors">
+    <button class="door" data-c="load" onclick="enter('load')">
+      <div class="door-letter">L</div>
+      <div class="door-body">
+        <div class="door-name">Load</div>
+        <div class="door-desc">Something is running inside. Empty it here first.</div>
+      </div>
+      <div class="door-count" id="dc-load"></div>
+    </button>
+    <button class="door" data-c="map" onclick="enter('map')">
+      <div class="door-letter">M</div>
+      <div class="door-body">
+        <div class="door-name">Map</div>
+        <div class="door-desc">Stay in the wave. Find the variables before anything collapses.</div>
+      </div>
+      <div class="door-count" id="dc-map"></div>
+    </button>
+    <button class="door" data-c="aim" onclick="enter('aim')">
+      <div class="door-letter">A</div>
+      <div class="door-body">
+        <div class="door-name">Aim</div>
+        <div class="door-desc">Variables known. Think it through. Find the real move.</div>
+      </div>
+      <div class="door-count" id="dc-aim"></div>
+    </button>
+    <button class="door" data-c="fire" onclick="enter('fire')">
+      <div class="door-letter">F</div>
+      <div class="door-body">
+        <div class="door-name">Fire</div>
+        <div class="door-desc">One move. Real even if imperfect. Done beats perfect.</div>
+      </div>
+      <div class="door-count" id="dc-fire"></div>
+    </button>
+    <button class="door" data-c="reload" onclick="enter('reload')">
+      <div class="door-letter">R</div>
+      <div class="door-body">
+        <div class="door-name">Reload</div>
+        <div class="door-desc">Look back. Find the pattern. See what this has been building toward.</div>
+      </div>
+      <div class="door-count" id="dc-reload"></div>
+    </button>
+    <button class="door" data-c="train" onclick="enter('train')">
+      <div class="door-letter">T</div>
+      <div class="door-body">
+        <div class="door-name">Train</div>
+        <div class="door-desc">15 minutes. Six reps. Build the mind that doesn't need AI to think for it.</div>
+      </div>
+      <div class="door-count" id="dc-train"></div>
+    </button>
+    <button class="door" data-c="flow" onclick="enter('flow')">
+      <div class="door-letter">FL</div>
+      <div class="door-body">
+        <div class="door-name">Flow</div>
+        <div class="door-desc">Your mind as a map. Everything connected. Built from your data. The picture your brain actually holds onto.</div>
+      </div>
+      <div class="door-count" id="dc-flow"></div>
+    </button>
+    <button class="door" data-c="formulas" onclick="enter('formulas')">
+      <div class="door-letter">F</div>
+      <div class="door-body">
+        <div class="door-name">Formulas</div>
+        <div class="door-desc">Proven frameworks mapped to your variables. The protocols that already work — routed through you.</div>
+      </div>
+      <div class="door-count" id="dc-formulas"></div>
+    </button>
+    <button class="door" data-c="sim" onclick="enter('sim')">
+      <div class="door-letter">S</div>
+      <div class="door-body">
+        <div class="door-name">Simulate</div>
+        <div class="door-desc">Run the situation before it runs you. Any scenario. Full friction. No mercy.</div>
+      </div>
+      <div class="door-count" id="dc-sim"></div>
+    </button>
+  </div>
+
+  <!-- Mode toggle — Self-Check vs AI-Guided -->
+  <div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:16px;">
+    <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);">Mode</div>
+    <button class="mode-toggle on" id="mode-ai" onclick="setMode('ai')">AI-guided</button>
+    <button class="mode-toggle" id="mode-self" onclick="setMode('self')">Self-check first</button>
+  </div>
+
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+  <nav class="nav">
+    <div class="nav-brand">the system</div>
+    <div class="chaos-dot" id="chaos-dot"></div>
+    <div class="nav-tabs">
+      <button class="nav-tab" data-c="load"   onclick="go('load')">Load</button>
+      <button class="nav-tab" data-c="map"    onclick="go('map')">Map</button>
+      <button class="nav-tab" data-c="aim"    onclick="go('aim')">Aim</button>
+      <button class="nav-tab" data-c="fire"   onclick="go('fire')">Fire</button>
+      <button class="nav-tab" data-c="reload" onclick="go('reload')">Reload</button>
+      <button class="nav-tab" data-c="train" onclick="go('train')">Train</button>
+      <button class="nav-tab" data-c="sim" onclick="go('sim')">Simulate</button>
+      <button class="nav-tab" data-c="formulas" onclick="go('formulas')">Formulas</button>
+      <button class="nav-tab" data-c="flow" onclick="go('flow')">Flow</button>
+    </div>
+  </nav>
+
+  <!-- LOAD -->
+  <div class="chamber" id="ch-load">
+    <div class="ch-wrap">
+      <div class="ch-mark">
+        <span class="ch-n">01</span>
+        <span class="ch-name">Load</span>
+        <span class="unresolved" id="unres-mark"></span>
+        <div class="ch-line"></div>
+      </div>
+      <div class="ch-prompt" id="load-prompt">What's actually in your head right now? Not what you think you should say. The raw thing.</div>
+
+      <!-- Self-check panel — visible in self-check mode -->
+      <div id="load-selfcheck" style="display:none;margin-bottom:20px;">
+        <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--ink-4);margin-bottom:8px;">Before the AI responds — what do you think is underneath this?</div>
+        <textarea class="field" id="load-self-in" rows="3" placeholder="What's the real feeling? What's the real fear? Name it yourself first."></textarea>
+        <div class="actions" style="margin-top:12px;margin-bottom:20px;">
+          <button class="btn-ghost" onclick="revealAILoad()" style="color:var(--load);text-decoration-color:var(--load);">See what AI sees →</button>
+          <button class="btn-ghost" onclick="logSelfCheck('load')" style="font-size:7px;">I got it myself — log this</button>
+        </div>
+      </div>
+
+      <div class="field-wrap">
+        <div class="field-bg" id="load-bg"></div>
+        <textarea class="field" id="load-in" rows="7" placeholder="Start here. Messy is fine.&#10;This is just you and the page."></textarea>
+      </div>
+      <div class="section-label">How it feels</div>
+      <div class="tags" id="load-tags">
+        <button class="tag" onclick="tog(this)">overwhelmed</button>
+        <button class="tag" onclick="tog(this)">stuck</button>
+        <button class="tag" onclick="tog(this)">angry</button>
+        <button class="tag" onclick="tog(this)">foggy</button>
+        <button class="tag" onclick="tog(this)">excited but lost</button>
+        <button class="tag" onclick="tog(this)">doubting myself</button>
+        <button class="tag" onclick="tog(this)">on the edge of something</button>
+        <button class="tag" onclick="tog(this)">restless</button>
+        <button class="tag" onclick="tog(this)">can't communicate it</button>
+        <button class="tag" onclick="tog(this)">loop won't stop</button>
+        <button class="tag" onclick="tog(this)">wave state — don't collapse yet</button>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="runLoad()">Process</button>
+        <button class="btn-ghost" onclick="toArsenal()">Save to arsenal</button>
+        <button class="btn-ghost" onclick="carryTo('load','map')">→ Map first</button>
+        <button class="btn-ghost" onclick="carryTo('load','aim')">→ Aim</button>
+      </div>
+      <div class="thinking" id="load-think"><div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div><span>reading what's underneath</span></div>
+      <div class="resp" id="load-resp">
+        <div class="resp-label">what i'm hearing</div>
+        <div class="resp-body" id="load-resp-body"></div>
+        <div class="resp-actions">
+          <button class="btn-ghost" onclick="carryTo('load','map')">→ Map first</button>
+          <button class="btn-ghost" onclick="carryTo('load','aim')">→ Aim directly</button>
+          <button class="btn-ghost" onclick="toArsenal()">Save</button>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="hist-label">Arsenal</div>
+      <div class="hist-list" id="arsenal-list"><div class="empty">Nothing loaded yet.</div></div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="chamber" id="ch-map">
+    <div class="ch-wrap">
+      <div class="ch-mark">
+        <span class="ch-n">02</span>
+        <span class="ch-name">Map</span>
+        <div class="ch-line"></div>
+      </div>
+      <div class="ch-prompt">Stay in the wave. Before you solve — find what you're actually solving for.</div>
+
+      <div class="wave-bar-row" id="wbars">
+        <div class="wbar" style="height:7px"></div><div class="wbar" style="height:13px"></div>
+        <div class="wbar" style="height:18px"></div><div class="wbar" style="height:9px"></div>
+        <div class="wbar" style="height:15px"></div><div class="wbar" style="height:6px"></div>
+        <div class="wbar" style="height:11px"></div>
+      </div>
+      <div class="wave-note" id="wave-note">All possibilities open. Nothing collapsed yet.</div>
+
+      <div class="carry" id="map-carry"><div class="carry-label">from load</div><div class="carry-text" id="map-carry-text"></div></div>
+
+      <div class="section-label">The situation — no emotion, just facts</div>
+      <textarea class="field" id="map-sit" rows="3" placeholder="What are you actually dealing with?"></textarea>
+
+      <div class="section-label" style="margin-top:24px;">Variables — what are the moving parts?</div>
+      <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;color:var(--ink-3);margin-bottom:14px;line-height:1.5;">
+        Think algebra. Name the unknowns. Mark what you know.
+      </div>
+      <div class="var-grid" id="var-grid"></div>
+      <button class="add-var" onclick="addVar()">+ add variable</button>
+
+      <div class="section-label">Dependencies — what controls what?</div>
+      <div id="dep-list"></div>
+      <button class="add-var" onclick="addDep()" style="margin-top:0;">+ add dependency</button>
+
+      <div class="section-label" style="margin-top:20px;">What you don't know yet</div>
+      <textarea class="field" id="map-unknown" rows="2" placeholder="What information would change everything?"></textarea>
+
+      <div class="actions" style="margin-top:24px;">
+        <button class="btn" id="map-btn" onclick="runMap()">Map this</button>
+        <button class="btn-ghost" onclick="carryTo('map','aim')">→ Take to Aim</button>
+      </div>
+      <div class="thinking" id="map-think"><div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div><span id="map-think-txt">finding the variables</span></div>
+      <div class="resp" id="map-resp">
+        <div class="map-resp-label">the equation</div>
+        <div class="resp-body" id="map-resp-body"></div>
+        <div class="resp-actions">
+          <button class="btn-ghost" onclick="carryTo('map','aim')">→ Take to Aim</button>
+          <button class="btn-ghost" onclick="runMap()">↻ Again</button>
+        </div>
+      </div>
+
+      <!-- SOLVE panel — reads from Simulate + Train data -->
+      <div class="sep" style="margin:36px 0 28px;"></div>
+
+      <div style="font-size:8px;letter-spacing:0.3em;text-transform:uppercase;color:var(--map);margin-bottom:6px;">Solve</div>
+      <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--ink-3);margin-bottom:20px;line-height:1.6;">
+        Reads your simulation and training data. Expresses your behaviour as an equation. Shows you which variables actually control your outcomes — not which ones you think control them.
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <button class="btn" onclick="runSolve()" id="solve-btn" style="border-color:var(--map);color:var(--map);">Solve my equation</button>
+        <button class="btn-ghost" onclick="toggleSolveDetail()" id="solve-detail-btn" style="display:none;">Show variable breakdown →</button>
+      </div>
+
+      <div class="thinking" id="solve-think">
+        <div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>
+        <span id="solve-think-txt">Reading your data...</span>
+      </div>
+
+      <!-- Equation display -->
+      <div id="solve-result" style="display:none;margin-top:24px;animation:rise 0.4s ease both;">
+
+        <!-- The equation -->
+        <div style="background:rgba(138,90,204,0.05);border:1px solid rgba(138,90,204,0.2);padding:20px 24px;margin-bottom:20px;">
+          <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--map);margin-bottom:10px;">Your equation</div>
+          <div id="solve-equation" style="font-family:'DM Mono',monospace;font-size:16px;color:var(--ink);letter-spacing:0.05em;line-height:1.8;"></div>
+        </div>
+
+        <!-- Variables table -->
+        <div id="solve-vars-block" style="display:none;">
+          <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--ink-4);margin-bottom:12px;">Variable breakdown</div>
+          <div id="solve-vars-table"></div>
+        </div>
+
+        <!-- The insight -->
+        <div style="margin-top:20px;">
+          <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--ink-4);padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">What this means</div>
+          <div class="resp-body" id="solve-insight"></div>
+        </div>
+
+        <div class="resp-actions" style="margin-top:16px;">
+          <button class="btn-ghost" onclick="carryTo('map','aim')">→ Take to Aim</button>
+          <button class="btn-ghost" onclick="runSolve()">↻ Re-solve</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AIM -->
+  <div class="chamber" id="ch-aim">
+    <div class="ch-wrap">
+      <div class="ch-mark"><span class="ch-n">03</span><span class="ch-name">Aim</span><div class="ch-line"></div></div>
+      <div class="ch-prompt">Emotion is out. Variables mapped. Think clearly now. What's the real move?</div>
+      <div class="carry" id="aim-carry"><div class="carry-label">carried context</div><div class="carry-text" id="aim-carry-text"></div></div>
+      <div class="field-wrap">
+        <div class="field-bg" id="aim-bg"></div>
+        <textarea class="field" id="aim-in" rows="5" placeholder="Describe the situation plainly. Who. What. What's at stake."></textarea>
+      </div>
+      <div class="section-label">Stakes</div>
+      <div class="stakes">
+        <button class="stake" data-l="low" onclick="setSt(this)">Low</button>
+        <button class="stake on" data-l="med" onclick="setSt(this)">Medium</button>
+        <button class="stake" data-l="high" onclick="setSt(this)">High — cannot fail</button>
+      </div>
+      <div class="section-label">What you need</div>
+      <div class="tags" id="aim-tags">
+        <button class="tag" onclick="tog(this)">understand what's really happening</button>
+        <button class="tag" onclick="tog(this)">find my move</button>
+        <button class="tag" onclick="tog(this)">see how it plays out</button>
+        <button class="tag" onclick="tog(this)">how to communicate it</button>
+        <button class="tag" onclick="tog(this)">break the loop</button>
+        <button class="tag" onclick="tog(this)">make a plan</button>
+        <button class="tag" onclick="tog(this)">read the people involved</button>
+        <button class="tag" onclick="tog(this)">walk through possibilities first</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="aim-btn" onclick="runAim()">Think this through</button>
+        <button class="btn-ghost" onclick="go('fire')">→ Fire</button>
+      </div>
+      <div class="thinking" id="aim-think"><div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div><span id="aim-think-txt">mapping the situation</span></div>
+      <div class="resp" id="aim-resp">
+        <div class="resp-label">breakdown</div>
+        <div class="resp-body" id="aim-resp-body"></div>
+        <div class="resp-actions">
+          <button class="btn-ghost" onclick="carryTo('aim','fire')">→ Fire</button>
+          <button class="btn-ghost" onclick="runAim()">↻ Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIRE -->
+  <div class="chamber" id="ch-fire">
+    <div class="ch-wrap">
+      <div class="ch-mark"><span class="ch-n">04</span><span class="ch-name">Fire</span><div class="ch-line"></div></div>
+      <div class="ch-prompt">One move. Real even if imperfect. The gun has been loaded long enough.</div>
+      <div class="gun-ghost" id="gun-ghost">
+        <div class="gun-ghost-label">still loaded — from before</div>
+        <div class="gun-ghost-text" id="gun-ghost-txt"></div>
+      </div>
+      <div class="carry" id="fire-carry"><div class="carry-label">carried context</div><div class="carry-text" id="fire-carry-text"></div></div>
+      <div class="section-label">What kind of fire</div>
+      <div class="fmodes">
+        <div class="fmode on" data-m="communicate" onclick="setFm(this)"><div class="fmode-name">Communicate</div><div class="fmode-desc">Say this without losing them or myself</div></div>
+        <div class="fmode" data-m="plan" onclick="setFm(this)"><div class="fmode-name">Make a plan</div><div class="fmode-desc">Smallest real steps. Starting now.</div></div>
+        <div class="fmode" data-m="creative" onclick="setFm(this)"><div class="fmode-name">Creative shot</div><div class="fmode-desc">Turn this into something. A project.</div></div>
+        <div class="fmode" data-m="decide" onclick="setFm(this)"><div class="fmode-name">Just decide</div><div class="fmode-desc">I've been circling. Help me choose.</div></div>
+      </div>
+      <textarea class="field" id="fire-in" rows="4" placeholder="What specifically needs to happen?&#10;What's the one thing you've been avoiding?"></textarea>
+      <div class="actions">
+        <button class="btn" id="fire-btn" onclick="runFire()">Fire</button>
+        <button class="btn-ghost" onclick="go('reload')">→ Reload after</button>
+      </div>
+      <div class="thinking" id="fire-think"><div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div><span>loading the shot</span></div>
+      <div class="resp" id="fire-resp">
+        <div class="resp-label">your move</div>
+        <div class="resp-body" id="fire-resp-body"></div>
+        <div class="resp-actions">
+          <button class="btn-ghost" onclick="saveReload()">Save to Reload</button>
+          <button class="btn-ghost" onclick="runFire()">↻ Different angle</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RELOAD -->
+  <div class="chamber" id="ch-reload">
+    <div class="ch-wrap">
+      <div class="ch-mark"><span class="ch-n">05</span><span class="ch-name">Reload</span><div class="ch-line"></div></div>
+      <div class="ch-prompt">Look back at everything. The pattern is already there. You just can't see it from inside.</div>
+      <div class="traj" id="traj"></div>
+      <div class="traj-note">your path through the system</div>
+      <textarea class="field" id="reload-in" rows="4" placeholder="What happened? Just say it plainly.&#10;What did you do? What landed?"></textarea>
+      <div class="actions">
+        <button class="btn" onclick="runReload()">Find the pattern</button>
+        <button class="btn-ghost" onclick="saveReload()">Save this</button>
+      </div>
+      <div class="thinking" id="reload-think"><div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div><span>reading your history</span></div>
+      <div class="resp" id="reload-resp">
+        <div class="resp-label">the pattern</div>
+        <div class="resp-body" id="reload-resp-body"></div>
+      </div>
+      <div class="sep"></div>
+      <div class="hist-label">All entries</div>
+      <div class="hist-list" id="reload-list"><div class="empty">Nothing here yet.</div></div>
+    </div>
+  </div>
+
+
+  <!-- TRAIN -->
+  <div class="chamber" id="ch-train">
+    <div class="ch-wrap">
+      <div class="ch-mark">
+        <span class="ch-n">06</span>
+        <span class="ch-name">Train</span>
+        <div class="ch-line"></div>
+      </div>
+
+      <div class="ch-prompt" id="train-prompt">Five reps. Your mind at its sharpest. The AI prompts — you do the work.</div>
+
+      <!-- Streak -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:22px;font-family:'Instrument Serif',serif;color:var(--train)" id="streak-count">0</div>
+          <div style="font-size:7px;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-4)">day streak</div>
+        </div>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <div style="font-size:7px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4)" id="last-trained"></div>
+      </div>
+
+      <!-- Exercise tabs -->
+      <div style="display:flex;gap:2px;margin-bottom:28px;flex-wrap:wrap;" id="ex-tabs">
+        <button class="ex-tab on" data-ex="0" onclick="setEx(0)">Memory</button>
+        <button class="ex-tab" data-ex="1" onclick="setEx(1)">Patterns</button>
+        <button class="ex-tab" data-ex="2" onclick="setEx(2)">Emotion vs Thought</button>
+        <button class="ex-tab" data-ex="3" onclick="setEx(3)">Critical Thinking</button>
+        <button class="ex-tab" data-ex="4" onclick="setEx(4)">Detachment</button>
+        <button class="ex-tab" data-ex="5" onclick="setEx(5)">One Point</button>
+      </div>
+
+      <!-- Exercise prompt -->
+      <div class="train-ex-block" id="ex-0">
+        <div class="section-label">Memory — 3 minutes</div>
+        <div class="ch-prompt" style="font-size:15px;margin-bottom:16px;" id="mem-q">Loading...</div>
+        <textarea class="field" id="mem-in" rows="5" placeholder="Write from memory only. No checking. Just what you actually recall."></textarea>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-top:12px;margin-bottom:6px;">How confident are you in this recall?</div>
+        <div style="display:flex;gap:6px;margin-bottom:20px;">
+          <button class="tag" onclick="setConf(this,'low')">Low</button>
+          <button class="tag" onclick="setConf(this,'med')">Medium</button>
+          <button class="tag" onclick="setConf(this,'high')">High</button>
+        </div>
+      </div>
+
+      <div class="train-ex-block" id="ex-1" style="display:none;">
+        <div class="section-label">Pattern Recognition — 3 minutes</div>
+        <div class="ch-prompt" style="font-size:15px;margin-bottom:8px;">Look at your last entries below. What is the same across all of them? Find the thread yourself. Don't wait for the system to tell you.</div>
+        <div id="pattern-entries" style="margin-bottom:16px;"></div>
+        <textarea class="field" id="pat-in" rows="4" placeholder="The pattern I see is..."></textarea>
+      </div>
+
+      <div class="train-ex-block" id="ex-2" style="display:none;">
+        <div class="section-label">Emotion vs Thought — 4 minutes</div>
+        <div class="ch-prompt" style="font-size:15px;margin-bottom:16px;">Something happened yesterday that bothered you. Write it twice. Same event, different lenses.</div>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fire);margin-bottom:6px;">// Emotional version — how it felt</div>
+        <textarea class="field" id="emo-in" rows="3" placeholder="Emotional. Raw. How it actually felt inside."></textarea>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--aim);margin-top:16px;margin-bottom:6px;">// Factual version — what actually happened</div>
+        <textarea class="field" id="fact-in" rows="3" placeholder="Strip the feeling. Just the facts. Who did what. What was said. What happened."></textarea>
+      </div>
+
+      <div class="train-ex-block" id="ex-3" style="display:none;">
+        <div class="section-label">Critical Thinking — 5 minutes</div>
+        <div class="ch-prompt" style="font-size:15px;margin-bottom:8px;">Here is something you decided or said recently. Argue against yourself. What could be wrong about it?</div>
+        <div id="crit-source" style="border-left:1px solid var(--border);padding:10px 14px;margin-bottom:16px;font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--ink-3);">Loading your last entry...</div>
+        <textarea class="field" id="crit-in" rows="4" placeholder="What I might be wrong about here is... One thing that challenges this is... The assumption I'm making is..."></textarea>
+      </div>
+
+      <div class="train-ex-block" id="ex-4" style="display:none;">
+        <div class="section-label">Detachment — 3 minutes</div>
+        <div class="ch-prompt" style="font-size:15px;margin-bottom:16px;">What are you carrying right now that isn't yours? Someone's opinion. A situation you can't control. A conversation that's already over.</div>
+        <textarea class="field" id="det-in" rows="3" placeholder="I am carrying..."></textarea>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-top:16px;margin-bottom:6px;">Why it isn't yours</div>
+        <textarea class="field" id="det-why" rows="2" placeholder="This isn't mine because..."></textarea>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-top:16px;margin-bottom:6px;">I am leaving this outside today</div>
+        <input class="field" style="font-size:14px;padding:12px 0;" id="det-leave" type="text" placeholder="Name the thing you're putting down.">
+      </div>
+
+      <div class="train-ex-block" id="ex-5" style="display:none;">
+        <div class="section-label">The One Point — 3 minutes</div>
+        <div class="ch-prompt" style="font-size:15px;margin-bottom:16px;">Think of a conversation or situation where you said too much, went overboard, or couldn't communicate clearly. What was the one thing the other person actually needed to hear?</div>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-bottom:6px;">The situation</div>
+        <textarea class="field" id="op-sit" rows="2" placeholder="What was the situation? Who was there?"></textarea>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-top:16px;margin-bottom:6px;">What they actually needed to hear — one sentence only</div>
+        <textarea class="field" id="op-point" rows="2" placeholder="The one point was..."></textarea>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-top:16px;margin-bottom:6px;">What you said or did instead</div>
+        <textarea class="field" id="op-actual" rows="2" placeholder="What I actually said or did was..."></textarea>
+        <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-top:16px;margin-bottom:6px;">The gap — what emotion took over</div>
+        <textarea class="field" id="op-gap" rows="2" placeholder="The emotion that made me go overboard was..."></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions" style="margin-top:28px;">
+        <button class="btn" id="train-btn" onclick="saveTrain()" style="border-color:var(--train);color:var(--train);">Save this rep</button>
+        <button class="btn-ghost" id="next-ex-btn" onclick="nextEx()">Next exercise →</button>
+      </div>
+
+      <!-- Weekly reflection — Sundays only -->
+      <div id="weekly-block" style="display:none;margin-top:40px;">
+        <div style="font-size:7px;letter-spacing:0.35em;text-transform:uppercase;color:var(--train);padding-bottom:14px;border-bottom:1px solid rgba(56,168,204,0.2);margin-bottom:20px;">weekly reflection</div>
+        <div class="thinking" id="weekly-think"><div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div><span>reading your week</span></div>
+        <div class="resp-body" id="weekly-body" style="font-family:'Instrument Serif',serif;font-size:16px;line-height:1.9;color:var(--ink);"></div>
+        <button class="btn-ghost" style="margin-top:16px;" onclick="runWeekly()">↻ Re-read the week</button>
+      </div>
+
+      <!-- Graduation tracker -->
+      <div style="margin-top:40px;padding:20px 24px;border:1px solid var(--border);background:rgba(56,168,204,0.03);">
+        <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--train);margin-bottom:16px;">Independence tracker</div>
+        <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;color:var(--ink-3);margin-bottom:16px;line-height:1.5;">
+          How often do you handle situations yourself before reaching for the phone?
+          When a skill hits 10 self-solves — it's yours permanently.
+        </div>
+        <div id="graduation-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="hist-label">Training log</div>
+      <div class="hist-list" id="train-list"><div class="empty">No reps yet. First one tomorrow at 7am.</div></div>
+    </div>
+  </div>
+
+
+  <!-- SIMULATE -->
+  <div class="chamber" id="ch-sim">
+    <div class="ch-wrap">
+      <div class="ch-mark">
+        <span class="ch-n">07</span>
+        <span class="ch-name">Simulate</span>
+        <div class="ch-line"></div>
+      </div>
+
+      <div class="ch-prompt">Run the situation before it runs you. Full friction. The AI stays in character and does not go easy on you.</div>
+
+      <!-- Situation type selector -->
+      <div class="section-label" style="margin-bottom:10px;">Choose the situation</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:20px;" id="sim-types">
+        <div class="sim-type on" data-t="boss" onclick="setSimType(this)">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--sim);margin-bottom:3px;">Boss / Authority</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:12px;color:var(--ink-4);">Called in, questioned, challenged by someone above you</div>
+        </div>
+        <div class="sim-type" data-t="client" onclick="setSimType(this)">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px;">Client / Brief</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:12px;color:var(--ink-4);">Client doesn't like the work, keeps changing the brief, won't commit</div>
+        </div>
+        <div class="sim-type" data-t="critique" onclick="setSimType(this)">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px;">Design Critique</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:12px;color:var(--ink-4);">Your work is being pulled apart in front of others</div>
+        </div>
+        <div class="sim-type" data-t="peer" onclick="setSimType(this)">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px;">Peer / Colleague</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:12px;color:var(--ink-4);">Someone undermining you, taking credit, or creating friction</div>
+        </div>
+        <div class="sim-type" data-t="social" onclick="setSimType(this)">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px;">Social / New People</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:12px;color:var(--ink-4);">Networking, first impressions, communicating who you are</div>
+        </div>
+        <div class="sim-type" data-t="conflict" onclick="setSimType(this)">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px;">Direct Conflict</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:12px;color:var(--ink-4);">Open disagreement, confrontation, someone pushing back hard</div>
+        </div>
+        <div class="sim-type" data-t="random" onclick="setSimType(this)" style="grid-column:span 2;">
+          <div style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px;">Surprise me</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:12px;color:var(--ink-4);">Any situation. Can go anywhere. No preparation.</div>
+        </div>
+      </div>
+
+      <!-- Difficulty -->
+      <div class="section-label" style="margin-bottom:8px;">Difficulty</div>
+      <div class="stakes" style="margin-bottom:20px;" id="sim-diff">
+        <button class="stake" data-d="low" onclick="setSimDiff(this)">Low stakes</button>
+        <button class="stake on" data-d="med" onclick="setSimDiff(this)">Real friction</button>
+        <button class="stake" data-d="high" onclick="setSimDiff(this)">No mercy</button>
+      </div>
+
+      <!-- Optional context -->
+      <div class="section-label" style="margin-bottom:8px;">Add context (optional)</div>
+      <textarea class="field" id="sim-context" rows="2"
+        placeholder="Any specific details — your role, what the situation is about, what you're afraid of happening..."></textarea>
+
+      <div class="actions" style="margin-top:20px;">
+        <button class="btn" id="sim-start-btn" onclick="startSim()" style="border-color:var(--sim);color:var(--sim);">Start simulation</button>
+      </div>
+
+      <!-- Simulation conversation -->
+      <div id="sim-convo" style="display:none;margin-top:36px;">
+
+        <div style="font-size:7px;letter-spacing:0.35em;text-transform:uppercase;color:var(--sim);padding-bottom:14px;border-bottom:1px solid rgba(204,122,56,0.2);margin-bottom:24px;" id="sim-scenario-label">Simulation running</div>
+
+        <!-- Scenario setup -->
+        <div id="sim-scenario" style="background:rgba(204,122,56,0.04);border-left:2px solid var(--sim);padding:14px 18px;margin-bottom:28px;font-family:'Instrument Serif',serif;font-style:italic;font-size:15px;color:var(--ink-2);line-height:1.7;"></div>
+
+        <!-- Chat messages -->
+        <div id="sim-messages" style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px;"></div>
+
+        <!-- Thinking indicator -->
+        <div class="thinking" id="sim-think" style="margin-bottom:12px;">
+          <div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>
+          <span id="sim-think-txt">In character...</span>
+        </div>
+
+        <!-- Your response input -->
+        <div id="sim-input-block">
+          <div style="font-size:7px;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-4);margin-bottom:8px;">Your response</div>
+          <textarea class="field" id="sim-response" rows="3"
+            placeholder="Respond as you would in real life. Don't overthink it. React."></textarea>
+          <div class="actions" style="margin-top:14px;">
+            <button class="btn" onclick="sendSimResponse()" style="border-color:var(--sim);color:var(--sim);">Send</button>
+            <button class="btn-ghost" onclick="endSim()">End simulation → get feedback</button>
+          </div>
+        </div>
+
+        <!-- Feedback panel — shown after simulation ends -->
+        <div id="sim-feedback" style="display:none;margin-top:32px;">
+          <div style="font-size:7px;letter-spacing:0.35em;text-transform:uppercase;color:var(--aim);padding-bottom:14px;border-bottom:1px solid rgba(184,124,26,0.2);margin-bottom:20px;">debrief</div>
+          <div class="resp-body" id="sim-feedback-body"></div>
+          <div class="actions" style="margin-top:20px;">
+            <button class="btn-ghost" onclick="resetSim()">↻ Run another</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="sep"></div>
+      <div class="hist-label">Past simulations</div>
+      <div class="hist-list" id="sim-list"><div class="empty">No simulations yet.</div></div>
+    </div>
+  </div>
+
+
+  <!-- FORMULAS -->
+  <div class="chamber" id="ch-formulas">
+    <div class="ch-wrap">
+      <div class="ch-mark">
+        <span class="ch-n">08</span>
+        <span class="ch-name">Formulas</span>
+        <div class="ch-line"></div>
+      </div>
+
+      <div class="ch-prompt">Proven frameworks mapped to your variables. Not theory — protocols that thousands of people use daily. Routed through you specifically.</div>
+
+      <!-- Formula categories -->
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:28px;" id="formula-cats">
+        <button class="ex-tab on" data-cat="pressure" onclick="setFormCat(this)">Under Pressure</button>
+        <button class="ex-tab" data-cat="communicate" onclick="setFormCat(this)">Communicating</button>
+        <button class="ex-tab" data-cat="emotion" onclick="setFormCat(this)">Emotion Override</button>
+        <button class="ex-tab" data-cat="detach" onclick="setFormCat(this)">Detachment</button>
+        <button class="ex-tab" data-cat="think" onclick="setFormCat(this)">Clear Thinking</button>
+        <button class="ex-tab" data-cat="habit" onclick="setFormCat(this)">Habit Building</button>
+      </div>
+
+      <!-- Formula cards — populated by JS -->
+      <div id="formula-cards"></div>
+
+      <!-- Apply to my situation -->
+      <div class="sep"></div>
+      <div style="font-size:8px;letter-spacing:0.3em;text-transform:uppercase;color:var(--form);margin-bottom:8px;">Apply to my situation</div>
+      <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--ink-3);margin-bottom:16px;line-height:1.5;">
+        Describe a situation. The system picks the right formula, maps it to your variables, and shows you exactly how to apply it right now.
+      </div>
+      <textarea class="field" id="form-situation" rows="3" placeholder="What's the situation you're facing right now?"></textarea>
+      <div class="actions" style="margin-top:16px;">
+        <button class="btn" onclick="applyFormula()" style="border-color:var(--form);color:var(--form);">Match formula to situation</button>
+      </div>
+
+      <div class="thinking" id="form-think">
+        <div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>
+        <span>Finding the right formula...</span>
+      </div>
+
+      <div class="resp" id="form-resp">
+        <div class="resp-label" style="color:var(--form);">Formula applied</div>
+        <div class="resp-body" id="form-resp-body"></div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- FLOW -->
+  <div class="chamber" id="ch-flow">
+    <div class="ch-wrap" style="max-width:100%;padding:52px 20px 120px;">
+
+      <div style="max-width:640px;margin:0 auto;">
+        <div class="ch-mark">
+          <span class="ch-n">09</span>
+          <span class="ch-name">Flow</span>
+          <div class="ch-line"></div>
+        </div>
+        <div class="ch-prompt">Your mind as a map. Not a list. Not a timeline. A living network of how everything connects — built from what you've actually put into the system.</div>
+
+        <!-- Controls -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+          <button class="btn" onclick="buildFlow()" style="border-color:var(--flow);color:var(--flow);">Build my map</button>
+          <button class="btn-ghost" onclick="resetFlow()">Reset</button>
+          <div style="font-size:7px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);margin-left:8px;" id="flow-node-count"></div>
+        </div>
+
+        <!-- Legend -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;" id="flow-legend">
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-4);">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--load);"></div>Load
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-4);">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--sim);"></div>Simulate
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-4);">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--train);"></div>Train
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-4);">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--form);"></div>Formula
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-4);">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--map);"></div>Pattern
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-4);">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--fire);"></div>Unresolved
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas for flowchart -->
+      <div style="position:relative;width:100%;overflow:hidden;">
+        <canvas id="flow-canvas" style="width:100%;display:block;touch-action:none;cursor:grab;"></canvas>
+        <div id="flow-tooltip" style="display:none;position:absolute;background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;color:var(--ink-2);max-width:220px;line-height:1.5;pointer-events:none;z-index:10;"></div>
+      </div>
+
+      <!-- Node detail panel -->
+      <div id="flow-detail" style="display:none;max-width:640px;margin:20px auto 0;">
+        <div style="border:1px solid var(--border);padding:20px 24px;">
+          <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--ink-4);margin-bottom:8px;" id="flow-detail-type"></div>
+          <div style="font-family:'Instrument Serif',serif;font-size:16px;color:var(--ink);margin-bottom:12px;line-height:1.5;" id="flow-detail-text"></div>
+          <div style="font-size:12px;color:var(--ink-3);" id="flow-detail-connections"></div>
+        </div>
+      </div>
+
+      <!-- AI pattern insight -->
+      <div style="max-width:640px;margin:24px auto 0;">
+        <div class="thinking" id="flow-think">
+          <div class="t-dots"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>
+          <span>Mapping your connections...</span>
+        </div>
+
+        <div id="flow-insight" style="display:none;margin-top:8px;">
+          <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--flow);padding-bottom:12px;border-bottom:1px solid rgba(204,56,170,0.2);margin-bottom:16px;">What the map is telling you</div>
+          <div class="resp-body" id="flow-insight-body"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end app -->
+
+<script>
+// ====================================
+// STATE
+// ====================================
+const D = {
+  chamber:  'entry',
+  stake:    'med',
+  fmode:    'communicate',
+  aimCarry: '', fireCarry: '', mapCarry: '',
+  vars:     [],
+  arsenal:   JSON.parse(localStorage.getItem('dr_arsenal')    || '[]'),
+  reloads:   JSON.parse(localStorage.getItem('dr_reloads')    || '[]'),
+  path:      JSON.parse(localStorage.getItem('dr_path')       || '[]'),
+  sessions:  parseInt(localStorage.getItem('dr_sessions')     || '0'),
+  counts:    JSON.parse(localStorage.getItem('dr_counts')     || '{"load":0,"map":0,"aim":0,"fire":0,"reload":0,"train":0}'),
+  unresolved:parseInt(localStorage.getItem('dr_unresolved')   || '0'),
+};
+
+// == Derived chaos ==
+const chaos    = () => Math.min(1, D.unresolved / 6);
+const pressure = () => Math.min(1, Math.max(0, (D.counts.fire - D.counts.reload) / 5));
+const resolve  = () => { const t=D.counts.load+D.counts.fire+D.counts.aim; return t?Math.min(1,D.counts.reload*2/t):0; };
+const mapRatio = () => D.counts.map / Math.max(1, D.counts.load+D.counts.aim+D.counts.fire);
+
+// ====================================
+// CANVAS ENGINE
+// ====================================
+const CV = document.getElementById('canvas');
+const cx = CV.getContext('2d');
+let CW, CH, T = 0;
+let mouse  = {x:.5, y:.5};
+let mTarget= {x:.5, y:.5};
+let vp     = {x:.5, y:.5};
+let vpTarget = {x:.5, y:.5};
+
+const VP_CHAMBER = {
+  entry:  {x:.5,   y:.5  },
+  load:   {x:.38,  y:.52 },
+  map:    {x:.5,   y:.44 },
+  aim:    {x:.52,  y:.5  },
+  fire:   {x:.64,  y:.5  },
+  reload: {x:.5,   y:.56 },
+};
+
+function resizeCV() {
+  // Use offsetWidth/Height for proper dimensions in sandboxed iframes
+  CW = CV.width  = CV.offsetWidth  || window.innerWidth;
+  CH = CV.height = CV.offsetHeight || window.innerHeight;
+  if(CW < 10) { CW = CV.width  = window.innerWidth; }
+  if(CH < 10) { CH = CV.height = window.innerHeight; }
+}
+window.addEventListener('resize', resizeCV);
+// Resize after a short delay to let the DOM settle in sandboxed environments
+resizeCV();
+setTimeout(resizeCV, 200);
+setTimeout(resizeCV, 800);
+
+document.addEventListener('mousemove', e=>{ mTarget.x=e.clientX/CW; mTarget.y=e.clientY/CH; });
+document.addEventListener('touchmove', e=>{ mTarget.x=e.touches[0].clientX/CW; mTarget.y=e.touches[0].clientY/CH; },{passive:true});
+
+function lp(a,b,t){ return a+(b-a)*t; }
+
+function setVP(c){
+  const p = VP_CHAMBER[c] || VP_CHAMBER.entry;
+  vpTarget.x = p.x; vpTarget.y = p.y;
+}
+
+function drawFrame(){
+  T += 0.006;
+
+  // Always re-check canvas size
+  if(CV.offsetWidth > 10 && CV.offsetWidth !== CW){
+    CW = CV.width  = CV.offsetWidth;
+    CH = CV.height = CV.offsetHeight;
+  }
+
+  cx.clearRect(0,0,CW,CH);
+
+  // smooth interpolations
+  mouse.x = lp(mouse.x, mTarget.x, 0.04);
+  mouse.y = lp(mouse.y, mTarget.y, 0.04);
+  vp.x = lp(vp.x, vpTarget.x + (mouse.x-.5)*0.07, 0.022);
+  vp.y = lp(vp.y, vpTarget.y + (mouse.y-.5)*0.05, 0.022);
+
+  const vpx = CW * vp.x;
+  const vpy = CH * vp.y;
+  const ch  = chaos();
+  const pr  = pressure();
+  const re  = resolve();
+  const mr  = mapRatio();
+
+  // == 1. CORE AMBIENT GLOW -- amber, the world, Bengaluru at night ==
+  const rInner = Math.min(CW,CH) * (0.22 + ch*0.12);
+  const rOuter = Math.min(CW,CH) * (0.65 + ch*0.25);
+  const gAlpha = 0.09 + ch*0.07 + pr*0.05;
+
+  const g1 = cx.createRadialGradient(vpx,vpy,0,vpx,vpy,rInner);
+  g1.addColorStop(0, `rgba(210,160,60,${gAlpha*2.4})`);
+  g1.addColorStop(1, `rgba(180,120,40,0)`);
+  cx.fillStyle = g1; cx.fillRect(0,0,CW,CH);
+
+  const g2 = cx.createRadialGradient(vpx,vpy,rInner,vpx,vpy,rOuter);
+  g2.addColorStop(0, `rgba(160,90,20,${gAlpha*0.9})`);
+  g2.addColorStop(1, `rgba(0,0,0,0)`);
+  cx.fillStyle = g2; cx.fillRect(0,0,CW,CH);
+
+  // == 2. PARTICLES -- you as light in motion ==
+  //
+  // Wave-particle duality made visual.
+  // When unobserved -- a wave, all possibilities.
+  // When observed -- collapses into a single point.
+  //
+  // Each particle has a personality:
+  //   FAST + CHAOTIC   -- divergent mind, impossible visions
+  //   SLOW + HEAVY     -- things being carried
+  //   ORBITING PAIRS   -- loaded guns, circling each other
+  //   FROZEN (x3)      -- the 3 camera months, barely moving
+  //   BRIGHT (x1)      -- the current loaded thought, always visible
+  //
+  // Collisions are real -- particles influence each other's paths.
+  // The wave interference lives underneath -- particles ride on top.
+
+  // == Init particle system once per canvas lifetime ==
+  if(!CV._particles){
+    const COUNT = 120;
+    const pts   = [];
+
+    for(let i = 0; i < COUNT; i++){
+      const isFrozen  = i < 3;
+      const isBright  = i === 3;
+      const isOrbiter = i >= 4 && i < 18;
+      const isHeavy   = i >= 18 && i < 38;
+      const isChaotic = i >= 38;
+
+      // Speed personality
+      const baseSpeed = isFrozen  ? 0.0
+                      : isBright  ? 0.55
+                      : isOrbiter ? 0.18
+                      : isHeavy   ? 0.06 + Math.random()*0.08
+                      : 0.12 + Math.random()*0.28;
+
+      const angle = Math.random() * Math.PI * 2;
+
+      pts.push({
+        x:   Math.random() * 800,
+        y:   Math.random() * 800,
+        vx:  Math.cos(angle) * baseSpeed,
+        vy:  Math.sin(angle) * baseSpeed,
+        size: isBright  ? 2.8
+             : isFrozen  ? 1.4
+             : isHeavy   ? 1.8 + Math.random()*0.8
+             : isOrbiter ? 1.2
+             : 0.8 + Math.random()*1.2,
+        isFrozen,
+        isBright,
+        isOrbiter,
+        isHeavy,
+        isChaotic,
+        orbitPartner: isOrbiter ? Math.floor(4 + ((i-4+7)%14)) : -1,
+        orbitRadius:  18 + Math.random()*22,
+        orbitSpeed:   (Math.random() > 0.5 ? 1 : -1) * (0.008 + Math.random()*0.012),
+        orbitAngle:   Math.random() * Math.PI * 2,
+        life:  Math.random(),
+        seed:  Math.random() * 1000,
+      });
+    }
+    CV._particles = pts;
+    CV._pT = 0;
+  }
+
+  const pts   = CV._particles;
+  const COUNT = pts.length;
+  CV._pT += 0.016;
+  const pT = CV._pT;
+
+  // == Update particle positions ==
+  const unresCount = D.arsenal.filter(a=>!a.resolved).length;
+  const brightIdx  = 3; // always particle 3
+
+  for(let i = 0; i < COUNT; i++){
+    const p = pts[i];
+    if(p.isFrozen) continue;
+
+    // Scale positions to current canvas
+    const px_norm = p.x / 800;
+    const py_norm = p.y / 800;
+
+    // Gentle drift toward VP -- the convergence pull
+    // Not forced. Just a tendency. Some particles resist it.
+    const toVPx = (vpx/CW - px_norm) * CW;
+    const toVPy = (vpy/CH - py_norm) * CH;
+    const distToVP = Math.sqrt(toVPx*toVPx + toVPy*toVPy);
+
+    if(!p.isChaotic && distToVP > 30){
+      // Heavy and orbiting particles drift gently toward VP
+      const pull = p.isHeavy ? 0.0002 : 0.00008;
+      p.vx += (toVPx / distToVP) * pull * CW;
+      p.vy += (toVPy / distToVP) * pull * CH;
+    } else if(p.isChaotic && distToVP < 80){
+      // Chaotic particles resist convergence -- they push away
+      p.vx -= (toVPx / distToVP) * 0.0003 * CW;
+      p.vy -= (toVPy / distToVP) * 0.0003 * CH;
+    }
+
+    // Orbiting pairs -- circle each other
+    if(p.isOrbiter && p.orbitPartner >= 0 && p.orbitPartner < COUNT){
+      p.orbitAngle += p.orbitSpeed;
+      const partner = pts[p.orbitPartner];
+      const targetX = (partner.x/800)*CW + Math.cos(p.orbitAngle)*p.orbitRadius;
+      const targetY = (partner.y/800)*CH + Math.sin(p.orbitAngle)*p.orbitRadius;
+      p.vx += ((targetX - px_norm*CW) * 0.04 - p.vx) * 0.08;
+      p.vy += ((targetY - py_norm*CH) * 0.04 - p.vy) * 0.08;
+    }
+
+    // Collision influence -- nearby particles push each other
+    for(let j = i+1; j < Math.min(i+8, COUNT); j++){
+      const q = pts[j];
+      const dx = (p.x - q.x)/800 * CW;
+      const dy = (p.y - q.y)/800 * CH;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if(d < 28 && d > 0.1){
+        const force = (28 - d) / 28 * 0.0004;
+        p.vx += (dx/d) * force * CW;
+        p.vy += (dy/d) * force * CH;
+        q.vx -= (dx/d) * force * CW;
+        q.vy -= (dy/d) * force * CH;
+      }
+    }
+
+    // Speed limit -- different per personality
+    const maxSpeed = p.isHeavy ? 0.15 : p.isOrbiter ? 0.25 : p.isChaotic ? 0.55 : 0.35;
+    const speed    = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+    if(speed > maxSpeed){
+      p.vx = (p.vx/speed)*maxSpeed;
+      p.vy = (p.vy/speed)*maxSpeed;
+    }
+
+    // Move
+    p.x += p.vx / CW * 800;
+    p.y += p.vy / CH * 800;
+
+    // Wrap around edges -- the world is continuous
+    if(p.x < 0)   p.x += 800;
+    if(p.x > 800) p.x -= 800;
+    if(p.y < 0)   p.y += 800;
+    if(p.y > 800) p.y -= 800;
+  }
+
+  // == Draw particles ==
+  for(let i = 0; i < COUNT; i++){
+    const p   = pts[i];
+    const px  = (p.x/800) * CW;
+    const py  = (p.y/800) * CH;
+    const isLoadedP = unresCount > 0 && i < unresCount * 4;
+
+    // Alpha based on personality + chaos state
+    let alpha = p.isBright  ? 0.75 + ch*0.15
+               : p.isFrozen  ? 0.12 + ch*0.06
+               : p.isHeavy   ? 0.22 + ch*0.08
+               : p.isOrbiter ? 0.18 + ch*0.10
+               : 0.14 + ch*0.06;
+
+    if(isLoadedP && !p.isFrozen) alpha = Math.min(alpha + 0.12, 0.85);
+
+    // Colour
+    let r, g, b;
+    if(p.isBright)        { r=232; g=68;  b=24;  } // red -- the loaded thought
+    else if(p.isFrozen)   { r=148; g=148; b=162; } // cool grey -- waiting
+    else if(p.isHeavy)    { r=210; g=158; b=48;  } // amber -- things being carried
+    else if(p.isOrbiter)  { r=138; g=90;  b=204; } // purple -- orbiting pairs
+    else if(isLoadedP)    { r=220; g=88;  b=32;  } // red-amber -- loaded
+    else                  { r=205; g=160; b=52;  } // amber -- the world
+
+    // Draw particle as soft glow -- no hard circle
+    const glow = cx.createRadialGradient(px,py,0, px,py, p.size*3.5);
+    glow.addColorStop(0,   `rgba(${r},${g},${b},${alpha})`);
+    glow.addColorStop(0.4, `rgba(${r},${g},${b},${alpha*0.5})`);
+    glow.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+    cx.fillStyle = glow;
+    cx.fillRect(px-p.size*4, py-p.size*4, p.size*8, p.size*8);
+
+    // Bright particle gets an extra halo
+    if(p.isBright){
+      const halo = cx.createRadialGradient(px,py,0, px,py, 18+ch*8);
+      halo.addColorStop(0,   `rgba(232,68,24,${0.18+ch*0.12})`);
+      halo.addColorStop(1,   `rgba(232,68,24,0)`);
+      cx.fillStyle = halo;
+      cx.fillRect(px-26, py-26, 52, 52);
+    }
+
+    // Draw faint connection lines between orbiting pairs
+    if(p.isOrbiter && p.orbitPartner >= 0 && p.orbitPartner < COUNT){
+      const q  = pts[p.orbitPartner];
+      const qx = (q.x/800)*CW;
+      const qy = (q.y/800)*CH;
+      const d  = Math.sqrt((px-qx)**2+(py-qy)**2);
+      if(d < 80){
+        cx.beginPath();
+        cx.moveTo(px, py);
+        cx.lineTo(qx, qy);
+        cx.strokeStyle = `rgba(138,90,204,${0.06*(1-d/80)})`;
+        cx.lineWidth = 0.4;
+        cx.stroke();
+      }
+    }
+
+    // Draw faint trails for fast chaotic particles
+    if(p.isChaotic && (Math.abs(p.vx)+Math.abs(p.vy)) > 0.2){
+      const trailX = px - p.vx/CW*800*3;
+      const trailY = py - p.vy/CH*800*3;
+      cx.beginPath();
+      cx.moveTo(px, py);
+      cx.lineTo(trailX, trailY);
+      const tg2 = cx.createLinearGradient(px,py,trailX,trailY);
+      tg2.addColorStop(0, `rgba(205,160,52,${alpha*0.4})`);
+      tg2.addColorStop(1, `rgba(205,160,52,0)`);
+      cx.strokeStyle = tg2;
+      cx.lineWidth = 0.5;
+      cx.stroke();
+    }
+  }
+
+  // == 3. WAVE-PARTICLE DUALITY -- always present, not gated ==
+  // Two wave sources creating genuine interference
+  // Visible always -- this is the philosophy, not a feature unlock
+  // Intensity scales with map usage but never disappears
+
+  const wBase  = 0.08 + mr*0.06;   // base alpha -- always clearly visible
+  const rings  = 7;
+  const spread = Math.min(CW,CH) * 0.46;
+
+  // Source 1 -- the primary VP
+  for(let w=0; w<rings; w++){
+    const r = spread*(w+1)/rings + Math.sin(T*0.65+w*0.85)*9;
+    const wA = wBase * (1 - w/rings) * 1.6;
+    cx.beginPath();
+    cx.arc(vpx, vpy, Math.max(1,r), 0, Math.PI*2);
+    cx.strokeStyle = `rgba(138,90,204,${wA})`;
+    cx.lineWidth = 0.8;
+    cx.stroke();
+  }
+
+  // Source 2 -- offset, drifting slowly -- the unobserved particle
+  const s2x = vpx + Math.cos(T*0.22)*CW*0.22 + Math.sin(T*0.09)*CW*0.06;
+  const s2y = vpy + Math.sin(T*0.18)*CH*0.16 + Math.cos(T*0.11)*CH*0.04;
+
+  for(let w=0; w<rings-1; w++){
+    const r = spread*0.75*(w+1)/(rings-1) + Math.sin(T*0.78+w*1.1)*7;
+    const wA = wBase * 0.85 * (1 - w/(rings-1));
+    cx.beginPath();
+    cx.arc(s2x, s2y, Math.max(1,r), 0, Math.PI*2);
+    cx.strokeStyle = `rgba(138,90,204,${wA})`;
+    cx.lineWidth = 0.6;
+    cx.stroke();
+  }
+
+  // Interference bright spots -- visible, meaningful
+  for(let ix=0; ix<CW; ix+=60){
+    for(let iy=0; iy<CH; iy+=60){
+      const d1 = Math.sqrt((ix-vpx)**2+(iy-vpy)**2);
+      const d2 = Math.sqrt((ix-s2x)**2+(iy-s2y)**2);
+      const phase1 = Math.sin(d1/36 - T*0.8);
+      const phase2 = Math.sin(d2/36 - T*0.75);
+      const interference = (phase1+phase2)/2;
+      if(interference > 0.65){
+        const iA = (interference-0.65)*3.5 * wBase * 3;
+        cx.beginPath();
+        cx.arc(ix, iy, 2, 0, Math.PI*2);
+        cx.fillStyle = `rgba(168,120,234,${iA})`;
+        cx.fill();
+      }
+    }
+  }
+
+  // == 4. PRESSURE PULSE ==
+  if(pr > 0.15){
+    const pulse = (Math.sin(T*3.5)*0.5+0.5)*Math.min(CW,CH)*0.18*pr;
+    cx.beginPath();
+    cx.arc(vpx,vpy,pulse,0,Math.PI*2);
+    cx.strokeStyle = `rgba(204,56,32,${pr*0.09})`;
+    cx.lineWidth = 0.8;
+    cx.stroke();
+  }
+
+  // == 5. ARSENAL DOTS -- Chekhov's Gun orbiting ==
+  if(D.arsenal.length > 0){
+    const orb = Math.min(CW,CH) * 0.07;
+    D.arsenal.slice(0,14).forEach((item,i)=>{
+      const angle = (i/Math.min(D.arsenal.length,14))*Math.PI*2 + T*0.12;
+      const r = orb + Math.sin(T*0.4+i)*6;
+      const dx = vpx + Math.cos(angle)*r;
+      const dy = vpy + Math.sin(angle)*r;
+      const da = item.resolved ? 0.2 : 0.08 + ch*0.14;
+      const dc = item.resolved ? `rgba(56,168,112,${da})` : `rgba(204,56,32,${da})`;
+
+      cx.beginPath();
+      cx.arc(dx,dy,item.resolved?2:1.5,0,Math.PI*2);
+      cx.fillStyle = dc;
+      cx.fill();
+
+      if(!item.resolved){
+        cx.beginPath();
+        cx.moveTo(dx,dy); cx.lineTo(vpx,vpy);
+        cx.strokeStyle = `rgba(204,56,32,${da*0.25})`;
+        cx.lineWidth = 0.25; cx.stroke();
+      }
+    });
+  }
+
+  // == 6. VP -- light arriving, not a dot placed there ==
+  // No hard circle. Just concentric glow layers dissolving into black.
+  // The point exists because the lines point to it, not because it's drawn.
+  const vpLayers = [
+    { r: 32, a: 0.012 + ch*0.008 },
+    { r: 18, a: 0.022 + ch*0.014 },
+    { r: 10, a: 0.038 + ch*0.022 },
+    { r: 5,  a: 0.055 + ch*0.030 },
+    { r: 2,  a: 0.07  + ch*0.040 },
+  ];
+
+  vpLayers.forEach(({ r, a }) => {
+    const g = cx.createRadialGradient(vpx,vpy,0, vpx,vpy,r);
+    g.addColorStop(0,   `rgba(224,48,24,${a*2})`);
+    g.addColorStop(0.4, `rgba(210,42,20,${a})`);
+    g.addColorStop(1,   'rgba(0,0,0,0)');
+    cx.fillStyle = g;
+    cx.fillRect(vpx-r, vpy-r, r*2, r*2);
+  });
+
+  requestAnimationFrame(drawFrame);
+}
+
+setVP('entry');
+drawFrame();
+
+// ====================================
+// NAVIGATION
+// ====================================
+function enter(c){
+  D.sessions++;
+  localStorage.setItem('dr_sessions', D.sessions);
+  document.getElementById('entry').classList.remove('on');
+  document.getElementById('app').classList.add('on');
+  go(c);
+}
+
+function go(c){
+  D.chamber = c;
+  D.path.push(c);
+  if(D.path.length > 120) D.path.shift();
+  localStorage.setItem('dr_path', JSON.stringify(D.path));
+
+  document.querySelectorAll('.chamber').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('on'));
+  document.getElementById('ch-'+c).classList.add('on');
+  document.querySelector(`.nav-tab[data-c="${c}"]`).classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  setVP(c);
+  tick();
+
+  if(c==='map' && D.vars.length===0){ addVar(); addVar(); addVar(); }
+}
+
+// ====================================
+// CHAOS TICK -- updates all responsive UI
+// ====================================
+function tick(){
+  const ch = chaos(), pr = pressure(), re = resolve(), mr = mapRatio();
+
+  // Chaos dot colour
+  const dot = document.getElementById('chaos-dot');
+  if(ch > 0.6)      { dot.style.background='var(--fire)';   dot.style.boxShadow='0 0 5px var(--fire)'; }
+  else if(ch > 0.3) { dot.style.background='var(--aim)';    dot.style.boxShadow='none'; }
+  else if(re > 0.5) { dot.style.background='var(--reload)'; dot.style.boxShadow='0 0 4px var(--reload)'; }
+  else              { dot.style.background='var(--ink-4)';   dot.style.boxShadow='none'; }
+
+  // Load prompt shifts with chaos
+  const lp2 = document.getElementById('load-prompt');
+  if(ch > 0.7)      lp2.textContent = "Still here. Still building up inside. Let it out.";
+  else if(ch > 0.4) lp2.textContent = "Something's still unresolved. What is it this time?";
+  else              lp2.textContent = "What's actually in your head right now? Not what you think you should say. The raw thing.";
+
+  // Unresolved mark
+  const um = document.getElementById('unres-mark');
+  if(D.unresolved > 0){ um.textContent=`${D.unresolved} unresolved`; um.style.opacity='1'; }
+  else um.style.opacity='0';
+
+  // Quote responds
+  const qb  = document.getElementById('quote-block');
+  const leg = document.getElementById('leg-word');
+  if(ch > 0.6){
+    qb.style.borderLeftColor  = 'var(--red)';
+    leg.style.color = 'var(--red)';
+    leg.style.textShadow = '0 0 18px rgba(224,42,24,0.6)';
+  } else if(re > 0.5){
+    qb.style.borderLeftColor  = 'var(--red-dim)';
+    leg.style.color = 'var(--red)';
+    leg.style.textShadow = '0 0 14px rgba(224,42,24,0.3)';
+  } else {
+    qb.style.borderLeftColor  = 'var(--red-dim)';
+    leg.style.color = 'var(--red)';
+    leg.style.textShadow = '0 0 14px rgba(224,42,24,0.25)';
+  }
+
+  // Entry question
+  const eq = document.getElementById('entry-q');
+  if(D.sessions > 10 && ch > 0.5) eq.textContent = "Back again. What's loaded now?";
+  else if(D.sessions > 3)         eq.textContent = "Where is your mind right now?";
+
+  // Session label
+  const sl = document.getElementById('sess-label');
+  if(D.sessions > 0) sl.textContent = `-- session ${D.sessions}`;
+
+  // Door counts
+  ['load','map','aim','fire','reload','train','sim','formulas','flow'].forEach(c=>{
+    const el = document.getElementById('dc-'+c);
+    if(el && D.counts[c]>0) el.textContent = 'x'+D.counts[c];
+  });
+
+  // Wave bars
+  const bars = document.querySelectorAll('.wbar');
+  bars.forEach((b,i)=>{
+    const h = 5 + Math.sin(Date.now()/900+i)*8 + mr*10;
+    b.style.height = Math.max(3,h)+'px';
+    b.style.opacity = (0.2 + mr*0.6).toString();
+  });
+
+  // Wave note
+  const wn = document.getElementById('wave-note');
+  if(wn){
+    if(D.counts.map===0)   wn.textContent='All possibilities open. Nothing collapsed yet.';
+    else if(mr>0.5)        wn.textContent='You map before you collapse. That is the visionary move.';
+    else                   wn.textContent='More time in the wave. Fewer collapses you will regret.';
+  }
+
+  // Chekhov's gun ghost in Fire
+  if(D.arsenal.length>0 && D.unresolved>1){
+    const old = D.arsenal[D.arsenal.length-1];
+    document.getElementById('gun-ghost-txt').textContent = old.preview+(old.text.length>90?'...':'');
+    document.getElementById('gun-ghost').classList.add('on');
+  } else {
+    document.getElementById('gun-ghost').classList.remove('on');
+  }
+
+  // Field ghosts
+  const lb = document.getElementById('load-bg');
+  if(D.arsenal.length>1){ lb.textContent=D.arsenal[1].preview; lb.classList.add('on'); }
+  const ab = document.getElementById('aim-bg');
+  if(D.reloads.length>0){ ab.textContent=D.reloads[0].preview; ab.classList.add('on'); }
+
+  // Ghost words floating
+  updateGhosts(ch);
+
+  // Trajectory
+  const traj = document.getElementById('traj');
+  if(traj) traj.innerHTML = D.path.slice(-32).map(c=>`<div class="traj-dot ${c}-d" title="${c}"></div>`).join('');
+}
+
+// ====================================
+// GHOST WORDS
+// ====================================
+function updateGhosts(ch){
+  const layer = document.getElementById('ghost-layer');
+  if(!D.arsenal.length || ch < 0.18){
+    layer.querySelectorAll('.ghost').forEach(el=>el.style.opacity='0');
+    return;
+  }
+  const words = D.arsenal.flatMap(i=>i.text.split(/\s+/)).filter(w=>w.length>4).slice(0,50);
+  if(!words.length) return;
+  const target = Math.floor(ch*7);
+  if(layer.querySelectorAll('.ghost').length < target){
+    const w = words[Math.floor(Math.random()*words.length)].replace(/[^a-zA-Z]/g,'');
+    if(!w.trim()) return;
+    const el = document.createElement('div');
+    el.className = 'ghost';
+    el.textContent = w;
+    el.style.cssText=`left:${8+Math.random()*84}%;top:${4+Math.random()*92}%;font-size:${10+Math.random()*9}px;opacity:0;transform:rotate(${(Math.random()-.5)*5}deg)`;
+    layer.appendChild(el);
+    setTimeout(()=>el.style.opacity=(0.03+ch*0.05).toString(),80);
+    setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),4000); },9000+Math.random()*14000);
+  }
+}
+
+// ====================================
+// CONTROLS
+// ====================================
+function tog(el){ el.classList.toggle('on'); }
+function tags(id){ return Array.from(document.querySelectorAll(`#${id} .tag.on`)).map(t=>t.textContent); }
+function setSt(el){ document.querySelectorAll('.stake').forEach(s=>s.classList.remove('on')); el.classList.add('on'); D.stake=el.dataset.l; }
+function setFm(el){ document.querySelectorAll('.fmode').forEach(m=>m.classList.remove('on')); el.classList.add('on'); D.fmode=el.dataset.m; }
+
+function carryTo(from,to){
+  if(from==='load'){
+    const t=document.getElementById('load-in').value.trim(); if(!t) return;
+    if(to==='map'){ D.mapCarry=t; document.getElementById('map-carry-text').textContent=t.slice(0,200)+(t.length>200?'...':''); document.getElementById('map-carry').classList.add('on'); document.getElementById('map-sit').value=t.slice(0,300); }
+    if(to==='aim'){ D.aimCarry=t; document.getElementById('aim-carry-text').textContent=t.slice(0,200)+(t.length>200?'...':''); document.getElementById('aim-carry').classList.add('on'); }
+  }
+  if(from==='map'){ const t=document.getElementById('map-resp-body').textContent.trim(); if(!t) return; D.aimCarry=t; document.getElementById('aim-carry-text').textContent=t.slice(0,200)+(t.length>200?'...':''); document.getElementById('aim-carry').classList.add('on'); }
+  if(from==='aim'){ const t=document.getElementById('aim-resp-body').textContent.trim(); if(!t) return; D.fireCarry=t; document.getElementById('fire-carry-text').textContent=t.slice(0,200)+(t.length>200?'...':''); document.getElementById('fire-carry').classList.add('on'); }
+  go(to);
+}
+
+// ====================================
+// MAP VARIABLES
+// ====================================
+let vc=0;
+function addVar(name='',k=null){
+  vc++;
+  const id='v'+vc, sym=String.fromCharCode(64+vc);
+  const card=document.createElement('div');
+  card.className='var-card'; card.id=id;
+  const ks=k===true?'known':k===false?'unknown':'';
+  card.innerHTML=`<div class="var-card-label"><span>${sym}</span>variable ${vc}</div><textarea class="var-input" rows="2" placeholder="Name this variable.">${name}</textarea><button class="var-known ${ks}" onclick="tkn(this)">${ks||'?'}</button>`;
+  D.vars.push({id,sym,name,known:null});
+  document.getElementById('var-grid').appendChild(card);
+  syncVars(); updateDepSel();
+}
+function tkn(btn){
+  if(btn.classList.contains('known')){btn.classList.remove('known');btn.classList.add('unknown');btn.textContent='unknown';}
+  else if(btn.classList.contains('unknown')){btn.classList.remove('unknown');btn.textContent='?';}
+  else{btn.classList.add('known');btn.textContent='known';}
+  syncVars();
+}
+function syncVars(){
+  D.vars=[];
+  document.querySelectorAll('.var-card').forEach((c,i)=>{
+    const inp=c.querySelector('.var-input'), kb=c.querySelector('.var-known'), sym=String.fromCharCode(65+i);
+    D.vars.push({id:c.id,sym,name:inp?inp.value.trim():'',known:kb?(kb.classList.contains('known')?true:kb.classList.contains('unknown')?false:null):null});
+  });
+}
+function addDep(){
+  const list=document.getElementById('dep-list');
+  const row=document.createElement('div'); row.className='dep-row';
+  const opts=D.vars.map(v=>`<option value="${v.sym}">${v.sym}${v.name?' -- '+v.name.slice(0,18):''}</option>`).join('');
+  row.innerHTML=`<select class="dep-sel">${opts}</select><div class="dep-arrow">-></div><select class="dep-sel">${opts}</select><button class="dep-rm" onclick="this.parentElement.remove()">x</button>`;
+  list.appendChild(row);
+}
+function updateDepSel(){
+  const opts=D.vars.map(v=>`<option value="${v.sym}">${v.sym}${v.name?' -- '+v.name.slice(0,18):''}</option>`).join('');
+  document.querySelectorAll('.dep-sel').forEach(s=>{const cur=s.value; s.innerHTML=opts; s.value=cur;});
+}
+function getMapData(){
+  syncVars();
+  const deps=[];
+  document.querySelectorAll('.dep-row').forEach(r=>{
+    const ss=r.querySelectorAll('.dep-sel'); if(ss.length>=2) deps.push(`${ss[0].value} -> ${ss[1].value}`);
+  });
+  return {sit:document.getElementById('map-sit').value.trim(), vars:D.vars, deps, unknown:document.getElementById('map-unknown').value.trim()};
+}
+
+// ====================================
+// PERSIST
+// ====================================
+const now=()=>new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+
+function toArsenal(){
+  const t=document.getElementById('load-in').value.trim(); if(!t) return;
+  D.arsenal.unshift({text:t,preview:t.slice(0,90),date:now(),resolved:false});
+  if(D.arsenal.length>40) D.arsenal.pop();
+  D.unresolved=Math.min(D.unresolved+1,10);
+  ls('dr_arsenal',D.arsenal); ls('dr_unresolved',D.unresolved);
+  renderArsenal(); tick();
+}
+function saveReload(){
+  const t=document.getElementById('reload-in').value.trim()||document.getElementById('fire-resp-body').textContent.trim();
+  if(!t) return;
+  D.reloads.unshift({text:t,preview:t.slice(0,90),date:now()});
+  if(D.reloads.length>50) D.reloads.pop();
+  D.unresolved=Math.max(0,D.unresolved-2);
+  ls('dr_reloads',D.reloads); ls('dr_unresolved',D.unresolved);
+  renderReloads(); tick();
+}
+function incUse(c){ D.counts[c]++; ls('dr_counts',D.counts); }
+function ls(k,v){ localStorage.setItem(k, typeof v==='object'?JSON.stringify(v):String(v)); }
+
+function renderArsenal(){
+  const el=document.getElementById('arsenal-list');
+  if(!D.arsenal.length){el.innerHTML='<div class="empty">Nothing loaded yet.</div>';return;}
+  el.innerHTML=D.arsenal.map((item,i)=>`<div class="hist-row${!item.resolved?' unr':''}" onclick="document.getElementById('load-in').value=${JSON.stringify(item.text)};window.scrollTo({top:0,behavior:'smooth'})"><div class="hist-i">${!item.resolved?'o':''}</div><div class="hist-t">${item.preview}</div><div class="hist-d">${item.date}</div></div>`).join('');
+}
+function renderReloads(){
+  const el=document.getElementById('reload-list');
+  if(!D.reloads.length){el.innerHTML='<div class="empty">Nothing here yet.</div>';return;}
+  el.innerHTML=D.reloads.map((item,i)=>`<div class="hist-row"><div class="hist-i">0${i+1}</div><div class="hist-t">${item.preview}</div><div class="hist-d">${item.date}</div></div>`).join('');
+}
+
+// ====================================
+// CORE IDENTITY -- used in all prompts
+// ====================================
+const WHO = `22-year-old architect-photographer alone in Bengaluru. Powerful divergent and convergent mind simultaneously -- thinks like a wave, all possibilities open, but collapses into decisions too fast under pressure before walking through enough possibility space. Deep emotions override thinking at the worst moments. Self-doubt. Blocked without his camera for 3 months. Unconsciously scouting the city -- Hosa Road metro, MG Road, Vidhan Soudha, restobars at night. Obsessed with one-point perspectives. Loves maths -- trigonometry, calculus, algebra -- thinks in variables and equations when calm. Believes in wave-particle duality as a life metaphor: his best work happens when unobserved, before collapse. Chekhov's Gun worldview -- nothing is random, everything is connected and eventually fires. His personal philosophy: "Different points, different momentum, same game, just LEGENDARY" -- drawn from wave-particle duality and Barney Stinson's lore for everything. Wants to become a genuine visionary -- someone who arrives at vision after exploring real possibilities -- not someone who narrows down impulsively without assessing. Struggles to plan, to communicate his visions without losing respect, to believe in himself in front of others. Wants his chaos kept in check and reflected back so he can think with his actual brain, not his emotions.`;
+
+// ====================================
+// API
+// ====================================
+async function callAI(sys, msg, thinkId, respId, bodyId, done){
+  const think=document.getElementById(thinkId);
+  const resp=document.getElementById(respId);
+  const body=document.getElementById(bodyId);
+  think.classList.add('on'); resp.classList.remove('on');
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:sys,messages:[{role:"user",content:msg}]})
+    });
+    const d=await r.json();
+    const t=d.content?.map(b=>b.text||'').join('')||'No response.';
+    body.innerHTML=t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+    resp.classList.add('on'); if(done) done(t);
+  }catch(e){body.textContent='Something went wrong. Try again.'; resp.classList.add('on');}
+  think.classList.remove('on');
+}
+
+// ====================================
+// CHAMBER FUNCTIONS
+// ====================================
+function runLoad(){
+  const text=document.getElementById('load-in').value.trim(); if(!text) return;
+  incUse('load');
+  const em=tags('load-tags');
+  const sys=`You are the thinking companion inside THE SYSTEM -- built for ${WHO}
+
+LOAD mode: receive his raw emotional dump with zero judgment. Reflect back what you actually hear beneath the surface -- the real feeling, the real fear, the real need beneath the need. Don't solve yet. Don't advise yet. Just see him clearly and name what's actually there. 2-3 short paragraphs. Plain prose. Talk to him like a person, not a system.`;
+  callAI(sys, text+(em.length?`\nFeeling: ${em.join(', ')}` :''), 'load-think','load-resp','load-resp-body');
+}
+
+const AIM_PHRASES=['mapping the situation','reading the people','finding your position','running the scenarios','isolating the real variable'];
+let aimT=0, aimInt;
+
+function runAim(){
+  const text=document.getElementById('aim-in').value.trim()||D.aimCarry; if(!text) return;
+  incUse('aim');
+  const btn=document.getElementById('aim-btn'); btn.disabled=true;
+  aimInt=setInterval(()=>{ document.getElementById('aim-think-txt').textContent=AIM_PHRASES[aimT%AIM_PHRASES.length]; aimT++; },1400);
+  const nd=tags('aim-tags');
+  const st=D.stake==='low'?'low':D.stake==='med'?'medium':'HIGH -- cannot fail';
+  const sys=`You are a strategic thinking partner inside THE SYSTEM for ${WHO}
+
+AIM mode: think through the situation with total clarity. Use his architect's brain -- systems, structure, space, cause and effect. Cover: what's actually happening beneath the surface, what the people or forces involved actually want versus what they're saying, 2-3 scenarios for how this plays out, his real position of power -- he almost always underestimates it. Be honest. End with one single most important insight, the thing he needs to hold onto. Short paragraphs. No bullet points. Plain prose.`;
+  const carry=D.aimCarry?`\nContext: ${D.aimCarry}`:'';
+  const n=nd.length?`\nNeeds: ${nd.join(', ')}`:'';
+  callAI(sys, text+carry+n+`\nStakes: ${st}`, 'aim-think','aim-resp','aim-resp-body',()=>{ clearInterval(aimInt); btn.disabled=false; });
+}
+
+const MAP_PHRASES=['finding the variables','mapping dependencies','identifying unknowns','tracing the equation','isolating controllables'];
+let mapT2=0, mapInt;
+
+function runMap(){
+  const d=getMapData();
+  if(!d.sit && !d.vars.filter(v=>v.name).length) return;
+  incUse('map');
+  const btn=document.getElementById('map-btn'); btn.disabled=true;
+  mapInt=setInterval(()=>{ document.getElementById('map-think-txt').textContent=MAP_PHRASES[mapT2%MAP_PHRASES.length]; mapT2++; },1400);
+  const vl=d.vars.filter(v=>v.name).map(v=>`${v.sym}: "${v.name}" -- ${v.known===true?'known':v.known===false?'unknown':'unclear'}`).join('\n');
+  const dl=d.deps.length?d.deps.join('\n'):'none specified';
+  const sys=`You are the MAP mode inside THE SYSTEM for ${WHO}
+
+MAP mode: treat this as an algebra problem. His situation is the equation. Help him:
+1. Identify which variables are actually the right ones -- he may have named the wrong things
+2. Distinguish known from truly unknown
+3. Show the dependency structure -- what controls what
+4. Name the one variable that, if solved, unlocks most of the others
+5. Tell him what information he needs before he can solve this -- the missing data
+
+Be like a maths teacher who respects his intelligence. No condescension. Use his own variable labels. End by showing him the simplified equation: what he is really solving for. Plain prose, clear structure.`;
+  const msg=`Situation: ${d.sit||'(not specified)'}\nVariables:\n${vl||'none yet'}\nDependencies:\n${dl}\nUnknown: ${d.unknown||'(not specified)'}`;
+  callAI(sys, msg, 'map-think','map-resp','map-resp-body',()=>{ clearInterval(mapInt); btn.disabled=false; });
+}
+
+function runFire(){
+  const text=document.getElementById('fire-in').value.trim()||D.fireCarry; if(!text) return;
+  incUse('fire');
+  const btn=document.getElementById('fire-btn'); btn.disabled=true;
+  const modes={
+    communicate:`Give him the exact words. How to say this to the person or people involved without losing their respect or his own. Draft actual language he can use or adapt. He's an architect -- structure it like a space: entrance, movement, destination. Real, not corporate.`,
+    plan:`Break this into the smallest possible real steps. A tomorrow plan, not a grand plan. Max five steps. Each completable in under a day. Name the first step so specifically he could start it in the next hour.`,
+    creative:`Turn this situation, feeling, or idea into a creative concept. His one-point perspective obsession, three months scouting Bengaluru without a camera, architect's eye, wave-particle worldview, Chekhov's Gun thinking -- all of that is the brief. Give it a name, a visual direction, say clearly why only he could make it.`,
+    decide:`He has been circling. Help him choose. Two or three real options. What each costs, what each gives, what each says about who he is. Name the one that aligns with what he has actually been building toward. Be honest even if it is uncomfortable.`
+  };
+  const sys=`You are a direct action coach inside THE SYSTEM for ${WHO}
+
+FIRE mode -- ${D.fmode}. ${modes[D.fmode]} Be concrete. No fluff. Make him feel capable, not lectured. Plain prose.`;
+  const carry=D.fireCarry?`\nContext: ${D.fireCarry}`:'';
+  D.arsenal=D.arsenal.map((item,i)=>i<2?{...item,resolved:true}:item);
+  D.unresolved=Math.max(0,D.unresolved-1);
+  ls('dr_arsenal',D.arsenal); ls('dr_unresolved',D.unresolved);
+  callAI(sys, text+carry, 'fire-think','fire-resp','fire-resp-body',()=>{ btn.disabled=false; saveReload(); tick(); });
+}
+
+function runReload(){
+  const text=document.getElementById('reload-in').value.trim();
+  const hist=D.reloads.slice(0,8).map((e,i)=>`${i+1}. ${e.preview}`).join('\n');
+  if(!text&&!hist){ document.getElementById('reload-resp-body').textContent='Nothing to read yet. Use the system first. Come back here when you have something to look back on.'; document.getElementById('reload-resp').classList.add('on'); return; }
+  incUse('reload');
+  D.unresolved=Math.max(0,D.unresolved-3); ls('dr_unresolved',D.unresolved); tick();
+  const mapNote=D.counts.map>0?` He has started using Map -- beginning to stay in the wave state longer before collapsing. Acknowledge this if visible in his pattern.`:` He has not used Map much yet -- still tends to collapse decisions before mapping variables. Worth naming.`;
+  const sys=`You are a pattern-recognition mirror inside THE SYSTEM for ${WHO}${mapNote}
+
+RELOAD mode: look at what he has given you and reflect back the pattern you actually see. What is he actually building? What strength is hiding inside the repeated struggle? What is the thing he keeps avoiding that is also the exact thing that would change everything? Be honest. Be kind. Be sharp. This is the mirror that shows him who he actually is, not who he fears he is.`;
+  const entry=text?`Recent: ${text}\n\n`:'';
+  callAI(sys, entry+(hist?`History:\n${hist}`:''), 'reload-think','reload-resp','reload-resp-body');
+}
+
+
+
+
+
+
+// ====================================
+// FLOW CHAMBER
+// Visual node map -- your mind as a flowchart
+// Built from actual system data
+// Your brain holds onto relationships, not lists
+// ====================================
+
+let flowNodes  = [];
+let flowEdges  = [];
+let flowDragging = null;
+let flowOffset   = {x:0, y:0};
+let flowPan      = {x:0, y:0};
+let flowPanStart = null;
+let flowScale    = 1;
+let flowCanvas, flowCtx;
+let flowW, flowH;
+let flowAnimFrame;
+let flowBuilt = false;
+
+const NODE_COLORS = {
+  load:     '#4a82cc',
+  simulate: '#cc7a38',
+  train:    '#38a8cc',
+  formula:  '#38ccaa',
+  pattern:  '#8a5acc',
+  unresolved: '#cc3820',
+  variable: '#c8902a',
+  core:     '#e02a18'
+};
+
+function initFlowCanvas() {
+  flowCanvas = document.getElementById('flow-canvas');
+  if(!flowCanvas) return;
+  flowCtx = flowCanvas.getContext('2d');
+
+  const container = flowCanvas.parentElement;
+  flowW = flowCanvas.width  = container.offsetWidth || 800;
+  flowH = flowCanvas.height = Math.max(500, window.innerHeight * 0.65);
+  flowCanvas.style.height = flowH + 'px';
+
+  // Mouse events
+  flowCanvas.addEventListener('mousedown',  flowMouseDown);
+  flowCanvas.addEventListener('mousemove',  flowMouseMove);
+  flowCanvas.addEventListener('mouseup',    flowMouseUp);
+  flowCanvas.addEventListener('mouseleave', flowMouseUp);
+  flowCanvas.addEventListener('wheel',      flowWheel, {passive:false});
+
+  // Touch events
+  flowCanvas.addEventListener('touchstart', flowTouchStart, {passive:false});
+  flowCanvas.addEventListener('touchmove',  flowTouchMove,  {passive:false});
+  flowCanvas.addEventListener('touchend',   flowMouseUp);
+
+  if(!flowBuilt) drawFlowEmpty();
+}
+
+function drawFlowEmpty() {
+  if(!flowCtx) return;
+  flowCtx.clearRect(0,0,flowW,flowH);
+  flowCtx.fillStyle = 'rgba(204,56,170,0.04)';
+  flowCtx.fillRect(0,0,flowW,flowH);
+
+  // Grid dots
+  flowCtx.fillStyle = 'rgba(204,56,170,0.06)';
+  for(let x=20; x<flowW; x+=40){
+    for(let y=20; y<flowH; y+=40){
+      flowCtx.beginPath();
+      flowCtx.arc(x, y, 1, 0, Math.PI*2);
+      flowCtx.fill();
+    }
+  }
+
+  flowCtx.fillStyle = 'rgba(200,180,200,0.3)';
+  flowCtx.font = "italic 16px 'Instrument Serif', serif";
+  flowCtx.textAlign = 'center';
+  flowCtx.fillText('Tap "Build my map" to generate your flow', flowW/2, flowH/2);
+  flowCtx.textAlign = 'left';
+}
+
+function buildFlow() {
+  if(!flowCtx) initFlowCanvas();
+  flowNodes = [];
+  flowEdges = [];
+  flowPan   = {x:0, y:0};
+  flowScale = 1;
+
+  const CX = flowW / 2;
+  const CY = flowH / 2;
+
+  // == CORE NODE -- you, the centre ==
+  flowNodes.push({
+    id: 'core', type: 'core',
+    label: 'You',
+    sub: 'Different points. Different momentum.',
+    x: CX, y: CY,
+    r: 28, fixed: true
+  });
+
+  // == VARIABLE NODES -- your equation ==
+  const vars = [
+    {id:'var-E', label:'E', sub:'Emotional State', angle: -Math.PI/2,     dist:110},
+    {id:'var-R', label:'R', sub:'Response Quality',angle: -Math.PI/6,     dist:110},
+    {id:'var-C', label:'C', sub:'One Point Clarity',angle: Math.PI/6,     dist:110},
+    {id:'var-P', label:'P', sub:'Preparation',      angle: Math.PI/2,     dist:110},
+    {id:'var-A', label:'A', sub:'Authority Level',  angle: 5*Math.PI/6,   dist:110},
+  ];
+
+  vars.forEach(v => {
+    flowNodes.push({
+      id: v.id, type: 'variable',
+      label: v.label, sub: v.sub,
+      x: CX + Math.cos(v.angle)*v.dist,
+      y: CY + Math.sin(v.angle)*v.dist,
+      r: 18, fixed: false
+    });
+    flowEdges.push({from:'core', to:v.id, label:'', strength: v.label==='E'?0.9:0.5});
+  });
+
+  // == LOAD ENTRIES ==
+  const loadEntries = D.arsenal.filter(e=>!e.fromSim).slice(0,5);
+  loadEntries.forEach((e,i) => {
+    const angle = (-Math.PI/2) + (i - loadEntries.length/2) * 0.5;
+    const dist  = 200 + i*15;
+    const id    = 'load-'+i;
+    flowNodes.push({
+      id, type:'load',
+      label: e.preview.slice(0,28)+'...',
+      sub:   e.date,
+      x: CX + Math.cos(angle)*dist,
+      y: CY + Math.sin(angle)*dist - 80,
+      r: 14, fixed:false, full: e.preview
+    });
+    flowEdges.push({from:'var-E', to:id, label:'feeds', strength:0.4});
+    if(i>0) flowEdges.push({from:'load-'+(i-1), to:id, label:'', strength:0.2});
+  });
+
+  // == SIMULATION NODES ==
+  const simLog = JSON.parse(localStorage.getItem('dr_simlog')||'[]').slice(0,4);
+  simLog.forEach((s,i) => {
+    const angle = (Math.PI/6) + (i - simLog.length/2) * 0.4;
+    const dist  = 190 + i*10;
+    const id    = 'sim-'+i;
+    flowNodes.push({
+      id, type:'simulate',
+      label: s.type.slice(0,22),
+      sub:   s.diff + ' -- ' + s.turns + ' turns',
+      x: CX + Math.cos(angle)*dist + 60,
+      y: CY + Math.sin(angle)*dist,
+      r: 14, fixed:false, full: s.feedback
+    });
+    flowEdges.push({from:'var-R', to:id, label:'trains', strength:0.5});
+    flowEdges.push({from:id, to:'var-C', label:'improves', strength:0.35});
+  });
+
+  // == TRAIN NODES -- one per skill ==
+  const trainLog = JSON.parse(localStorage.getItem('dr_train')||'[]');
+  const bySkill  = {};
+  trainLog.forEach(e => {
+    if(!bySkill[e.skill]) bySkill[e.skill] = 0;
+    bySkill[e.skill]++;
+  });
+
+  const skills = Object.entries(bySkill);
+  skills.slice(0,6).forEach(([skill, count], i) => {
+    const angle = Math.PI + (i - skills.length/2) * 0.38;
+    const id    = 'train-'+skill;
+    flowNodes.push({
+      id, type:'train',
+      label: skill,
+      sub:   count + ' reps',
+      x: CX + Math.cos(angle)*170,
+      y: CY + Math.sin(angle)*170,
+      r: 13, fixed:false, full: count + ' reps of ' + skill
+    });
+    flowEdges.push({from:'core', to:id, label:'builds', strength:0.35});
+
+    // Connect train skills to relevant variables
+    if(skill==='emotion'||skill==='detachment') flowEdges.push({from:id, to:'var-E', label:'reduces', strength:0.4});
+    if(skill==='onepoint') flowEdges.push({from:id, to:'var-C', label:'sharpens', strength:0.45});
+    if(skill==='critical'||skill==='patterns') flowEdges.push({from:id, to:'var-R', label:'improves', strength:0.4});
+  });
+
+  // == FORMULA NODES -- ones used ==
+  const usedFormulas = trainLog.filter(e=>e.skill==='formula').slice(0,3);
+  usedFormulas.forEach((e,i) => {
+    const angle = -Math.PI/4 + i*0.4;
+    const id    = 'form-'+i;
+    flowNodes.push({
+      id, type:'formula',
+      label: (e.data.formula||'Formula').slice(0,22),
+      sub:   e.data.source||'',
+      x: CX + Math.cos(angle)*210,
+      y: CY + Math.sin(angle)*210 + 60,
+      r: 13, fixed:false, full: e.data.equation||''
+    });
+    flowEdges.push({from:'var-R', to:id, label:'applies', strength:0.3});
+  });
+
+  // == UNRESOLVED NODES -- loaded guns ==
+  const unresolved = D.arsenal.filter(e=>!e.resolved&&!e.fromSim).slice(0,3);
+  unresolved.forEach((e,i) => {
+    const angle = Math.PI*0.75 + i*0.35;
+    const id    = 'unres-'+i;
+    flowNodes.push({
+      id, type:'unresolved',
+      label: ' ' + e.preview.slice(0,24),
+      sub:   'loaded -- not fired',
+      x: CX + Math.cos(angle)*230,
+      y: CY + Math.sin(angle)*230,
+      r: 13, fixed:false, full: e.preview
+    });
+    flowEdges.push({from:'var-E', to:id, label:'inflates', strength:0.6});
+  });
+
+  flowBuilt = true;
+  document.getElementById('flow-node-count').textContent =
+    flowNodes.length + ' nodes  ' + flowEdges.length + ' connections';
+
+  // Run force simulation briefly to settle layout
+  runForceLayout(80);
+
+  // Then draw
+  if(flowAnimFrame) cancelAnimationFrame(flowAnimFrame);
+  drawFlow();
+
+  // Get AI insight
+  getFlowInsight();
+}
+
+function runForceLayout(iterations) {
+  for(let iter=0; iter<iterations; iter++){
+    // Repulsion between all nodes
+    for(let i=0; i<flowNodes.length; i++){
+      for(let j=i+1; j<flowNodes.length; j++){
+        const a = flowNodes[i], b = flowNodes[j];
+        if(a.fixed && b.fixed) continue;
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const d  = Math.sqrt(dx*dx+dy*dy) || 1;
+        const minD = (a.r+b.r)*3.5;
+        if(d < minD){
+          const force = (minD-d)/minD * 1.8;
+          if(!a.fixed){ a.x += (dx/d)*force; a.y += (dy/d)*force; }
+          if(!b.fixed){ b.x -= (dx/d)*force; b.y -= (dy/d)*force; }
+        }
+      }
+    }
+
+    // Attraction along edges
+    flowEdges.forEach(e => {
+      const a = flowNodes.find(n=>n.id===e.from);
+      const b = flowNodes.find(n=>n.id===e.to);
+      if(!a||!b) return;
+      const dx = b.x-a.x, dy = b.y-a.y;
+      const d  = Math.sqrt(dx*dx+dy*dy)||1;
+      const target = (a.r+b.r)*4;
+      if(d > target){
+        const force = (d-target)/d * 0.12 * (e.strength||0.5);
+        if(!a.fixed){ a.x += dx*force; a.y += dy*force; }
+        if(!b.fixed){ b.x -= dx*force; b.y -= dy*force; }
+      }
+    });
+
+    // Keep in bounds
+    flowNodes.forEach(n => {
+      if(n.fixed) return;
+      n.x = Math.max(n.r+8, Math.min(flowW-n.r-8, n.x));
+      n.y = Math.max(n.r+8, Math.min(flowH-n.r-8, n.y));
+    });
+  }
+}
+
+function drawFlow() {
+  if(!flowCtx) return;
+  flowCtx.clearRect(0,0,flowW,flowH);
+
+  // Background grid
+  flowCtx.fillStyle = 'rgba(204,56,170,0.03)';
+  flowCtx.fillRect(0,0,flowW,flowH);
+  flowCtx.fillStyle = 'rgba(204,56,170,0.05)';
+  for(let x=20; x<flowW; x+=40){
+    for(let y=20; y<flowH; y+=40){
+      flowCtx.beginPath();
+      flowCtx.arc(x,y,1,0,Math.PI*2);
+      flowCtx.fill();
+    }
+  }
+
+  flowCtx.save();
+  flowCtx.translate(flowPan.x, flowPan.y);
+  flowCtx.scale(flowScale, flowScale);
+
+  // Draw edges first
+  flowEdges.forEach(e => {
+    const a = flowNodes.find(n=>n.id===e.from);
+    const b = flowNodes.find(n=>n.id===e.to);
+    if(!a||!b) return;
+
+    const dx = b.x-a.x, dy = b.y-a.y;
+    const d  = Math.sqrt(dx*dx+dy*dy)||1;
+
+    // Arrow direction
+    const ex = b.x - (dx/d)*b.r;
+    const ey = b.y - (dy/d)*b.r;
+    const sx = a.x + (dx/d)*a.r;
+    const sy = a.y + (dy/d)*a.r;
+
+    // Slight curve
+    const mx = (sx+ex)/2 + (-dy/d)*20;
+    const my = (sy+ey)/2 + (dx/d)*20;
+
+    const alpha = 0.12 + (e.strength||0.3)*0.25;
+    flowCtx.beginPath();
+    flowCtx.moveTo(sx, sy);
+    flowCtx.quadraticCurveTo(mx, my, ex, ey);
+    flowCtx.strokeStyle = `rgba(204,56,170,${alpha})`;
+    flowCtx.lineWidth = 0.8 + (e.strength||0.3)*0.8;
+    flowCtx.stroke();
+
+    // Arrow tip
+    const angle = Math.atan2(ey-my, ex-mx);
+    const as = 6;
+    flowCtx.beginPath();
+    flowCtx.moveTo(ex, ey);
+    flowCtx.lineTo(ex - as*Math.cos(angle-0.4), ey - as*Math.sin(angle-0.4));
+    flowCtx.lineTo(ex - as*Math.cos(angle+0.4), ey - as*Math.sin(angle+0.4));
+    flowCtx.closePath();
+    flowCtx.fillStyle = `rgba(204,56,170,${alpha*1.5})`;
+    flowCtx.fill();
+
+    // Edge label
+    if(e.label){
+      flowCtx.fillStyle = `rgba(180,160,180,0.5)`;
+      flowCtx.font = "9px 'DM Mono', monospace";
+      flowCtx.textAlign = 'center';
+      flowCtx.fillText(e.label, mx, my-4);
+    }
+  });
+
+  // Draw nodes
+  flowNodes.forEach(n => {
+    const col = NODE_COLORS[n.type] || '#888';
+
+    // Glow
+    const hexToRgba = (hex, a) => {
+      const r = parseInt(hex.slice(1,3),16);
+      const g = parseInt(hex.slice(3,5),16);
+      const b = parseInt(hex.slice(5,7),16);
+      return 'rgba('+r+','+g+','+b+','+a+')';
+    };
+    const glow = flowCtx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*2.5);
+    glow.addColorStop(0, hexToRgba(col, 0.12));
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    flowCtx.beginPath();
+    flowCtx.arc(n.x,n.y,n.r*2.5,0,Math.PI*2);
+    flowCtx.fillStyle = glow;
+    flowCtx.fill();
+
+    // Node circle
+    flowCtx.beginPath();
+    flowCtx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    flowCtx.fillStyle = 'var(--surface)';
+    flowCtx.fill();
+    flowCtx.strokeStyle = col;
+    flowCtx.lineWidth = n.type==='core' ? 2.5 : 1.5;
+    flowCtx.stroke();
+
+    // Label
+    flowCtx.fillStyle = n.type==='core' ? col : 'rgba(220,210,200,0.9)';
+    const fontSize = n.type==='variable' ? 13 : n.type==='core' ? 11 : 9;
+    flowCtx.font = `${n.type==='variable'?'italic ':''} ${fontSize}px '${n.type==='variable'?'Instrument Serif':'DM Mono'}', ${n.type==='variable'?'serif':'monospace'}`;
+    flowCtx.textAlign = 'center';
+    flowCtx.textBaseline = 'middle';
+
+    // Wrap long labels
+    if(n.label.length > 16 && n.type!=='variable' && n.type!=='core'){
+      const words = n.label.split(' ');
+      const line1 = words.slice(0, Math.ceil(words.length/2)).join(' ');
+      const line2 = words.slice(Math.ceil(words.length/2)).join(' ');
+      flowCtx.fillText(line1, n.x, n.y-5);
+      flowCtx.fillText(line2, n.x, n.y+5);
+    } else {
+      flowCtx.fillText(n.label, n.x, n.y);
+    }
+
+    // Subtitle
+    if(n.sub && n.r > 13){
+      flowCtx.fillStyle = 'rgba(150,140,130,0.6)';
+      flowCtx.font = "8px 'DM Mono', monospace";
+      flowCtx.fillText(n.sub.slice(0,20), n.x, n.y + n.r + 10);
+    }
+
+    flowCtx.textBaseline = 'alphabetic';
+    flowCtx.textAlign = 'left';
+  });
+
+  flowCtx.restore();
+}
+
+// == INTERACTION ==
+function flowMouseDown(e) {
+  const pos   = canvasPos(e);
+  const world = screenToWorld(pos);
+  const hit   = hitNode(world);
+
+  if(hit){
+    if(hit.type !== 'core'){
+      flowDragging = hit;
+      flowOffset = {x: hit.x - world.x, y: hit.y - world.y};
+      flowCanvas.style.cursor = 'grabbing';
+    }
+    showNodeDetail(hit);
+  } else {
+    flowPanStart = pos;
+    flowCanvas.style.cursor = 'grabbing';
+  }
+}
+
+function flowMouseMove(e) {
+  const pos   = canvasPos(e);
+  const world = screenToWorld(pos);
+
+  if(flowDragging){
+    flowDragging.x = world.x + flowOffset.x;
+    flowDragging.y = world.y + flowOffset.y;
+    drawFlow();
+  } else if(flowPanStart){
+    flowPan.x += pos.x - flowPanStart.x;
+    flowPan.y += pos.y - flowPanStart.y;
+    flowPanStart = pos;
+    drawFlow();
+  } else {
+    const hit = hitNode(world);
+    flowCanvas.style.cursor = hit ? 'pointer' : 'grab';
+    showTooltip(hit, pos);
+  }
+}
+
+function flowMouseUp() {
+  flowDragging  = null;
+  flowPanStart  = null;
+  flowCanvas.style.cursor = 'grab';
+}
+
+function flowWheel(e) {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  flowScale = Math.max(0.4, Math.min(2.5, flowScale * delta));
+  drawFlow();
+}
+
+function flowTouchStart(e) {
+  e.preventDefault();
+  if(e.touches.length === 1) flowMouseDown(e.touches[0]);
+}
+
+function flowTouchMove(e) {
+  e.preventDefault();
+  if(e.touches.length === 1) flowMouseMove(e.touches[0]);
+}
+
+function canvasPos(e) {
+  const r = flowCanvas.getBoundingClientRect();
+  return { x: (e.clientX||e.pageX) - r.left, y: (e.clientY||e.pageY) - r.top };
+}
+
+function screenToWorld(p) {
+  return { x: (p.x - flowPan.x) / flowScale, y: (p.y - flowPan.y) / flowScale };
+}
+
+function hitNode(world) {
+  for(let i=flowNodes.length-1; i>=0; i--){
+    const n = flowNodes[i];
+    const d = Math.sqrt((world.x-n.x)**2+(world.y-n.y)**2);
+    if(d <= n.r * 1.4) return n;
+  }
+  return null;
+}
+
+function showTooltip(node, screenPos) {
+  const tip = document.getElementById('flow-tooltip');
+  if(!node){ tip.style.display='none'; return; }
+  tip.style.display = 'block';
+  tip.style.left    = (screenPos.x + 12) + 'px';
+  tip.style.top     = (screenPos.y - 10) + 'px';
+  tip.textContent   = node.full || node.sub || node.label;
+}
+
+function showNodeDetail(node) {
+  const panel = document.getElementById('flow-detail');
+  const type  = document.getElementById('flow-detail-type');
+  const text  = document.getElementById('flow-detail-text');
+  const conns = document.getElementById('flow-detail-connections');
+
+  type.textContent  = node.type.toUpperCase() + ' -- ' + node.label;
+  type.style.color  = NODE_COLORS[node.type] || 'var(--ink-4)';
+  text.textContent  = node.full || node.sub || 'No detail available.';
+
+  const connected = flowEdges
+    .filter(e => e.from===node.id || e.to===node.id)
+    .map(e => {
+      const otherId = e.from===node.id ? e.to : e.from;
+      const other   = flowNodes.find(n=>n.id===otherId);
+      const dir     = e.from===node.id ? '->' : '';
+      return other ? `${dir} ${other.label}${e.label?' ('+e.label+')':''}` : null;
+    })
+    .filter(Boolean);
+
+  conns.textContent = connected.length
+    ? 'Connected to: ' + connected.slice(0,5).join('  ')
+    : 'No connections mapped yet.';
+
+  panel.style.display = 'block';
+}
+
+function resetFlow() {
+  flowNodes=[]; flowEdges=[]; flowBuilt=false;
+  flowPan={x:0,y:0}; flowScale=1;
+  document.getElementById('flow-detail').style.display='none';
+  document.getElementById('flow-insight').style.display='none';
+  document.getElementById('flow-node-count').textContent='';
+  drawFlowEmpty();
+}
+
+async function getFlowInsight() {
+  const think  = document.getElementById('flow-think');
+  const result = document.getElementById('flow-insight');
+  think.classList.add('on');
+
+  // Build node summary for AI
+  const nodeSummary = flowNodes.map(n => n.type.toUpperCase()+': '+n.label+' -- '+(n.sub||'')).join('\n');
+
+  const edgeSummary = flowEdges.map(e => e.from+' ->'+(e.label?' '+e.label+' ':' ')+e.to+' (strength: '+(e.strength||0.5)+')').join('\n');
+
+  const sys = `You are the Flow insight engine inside THE SYSTEM for ${WHO}
+
+You are looking at a visual node map of this person's mind -- their emotional variables, their loaded entries, their simulation history, their training reps, and how they all connect.
+
+Your job: read the map structure and give one honest insight about what the MAP ITSELF is showing -- not what individual nodes mean, but what the overall CONNECTION PATTERN reveals. What is heavily connected? What is isolated? What variable is the hub that everything flows through? What node exists alone with no connections -- meaning it's loaded but unintegrated?
+
+This is pattern recognition applied to the map itself. Be specific. Reference actual node names and connections. Under 120 words. Plain prose.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:sys,
+        messages:[{role:'user',content:`Nodes:
+${nodeSummary}
+
+Connections:
+${edgeSummary}`}]})
+    });
+    const data = await res.json();
+    const text = data.content?.map(b=>b.text||'').join('')||'';
+    document.getElementById('flow-insight-body').innerHTML =
+      text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+    result.style.display='block';
+  } catch(e) {
+    document.getElementById('flow-insight-body').textContent = 'Could not generate insight. Try again.';
+    result.style.display='block';
+  }
+  think.classList.remove('on');
+}
+
+function initFlow() {
+  initFlowCanvas();
+}
+
+const _go5=go; go=function(c){ _go5(c); if(c==='flow'){ setTimeout(initFlow,100); } };
+const _enter5=enter; enter=function(c){ _enter5(c); if(c==='flow'){ setTimeout(initFlow,100); } };
+
+// ====================================
+// FORMULAS CHAMBER
+// Proven frameworks mapped to variables
+// ====================================
+
+const FORMULAS = {
+
+  pressure: [
+    {
+      name: "The 5-Second Rule",
+      source: "Mel Robbins",
+      equation: "Action = count(5->1) before emotion locks",
+      variables: { "5->1": "countdown that interrupts the freeze response", "emotion locks": "the moment E overwhelms R" },
+      when: "When you feel the freeze coming -- in a meeting, before speaking, before responding",
+      steps: [
+        "The moment you feel the urge to hesitate -- start counting. 5. 4. 3. 2. 1.",
+        "Move physically before you reach 1. Stand up. Speak. Write the first word.",
+        "The counting interrupts the emotional hijack before it completes.",
+        "You don't wait to feel ready. You act, then feel ready."
+      ],
+      your_version: "Your E variable is your biggest collapse trigger. This formula interrupts E before it overrides R. Use it the moment you feel the freeze in any situation.",
+      mapped: "R = Action(5->1)  (1 - E_lock)"
+    },
+    {
+      name: "Negative Visualisation",
+      source: "Stoic Philosophy -- Marcus Aurelius, Seneca",
+      equation: "Readiness = pre-experience(worst_case) -> reduces fear_weight",
+      variables: { "worst_case": "the outcome you fear most", "fear_weight": "how much F is inflating your emotional response" },
+      when: "Before any high-stakes situation -- a meeting, a presentation, a confrontation",
+      steps: [
+        "Before entering the situation, spend 2 minutes imagining the worst realistic outcome.",
+        "Not catastrophising -- just clearly seeing what would actually happen if it went badly.",
+        "Ask: could I survive that? Could I recover from that?",
+        "The answer is almost always yes. The fear was larger than the actual consequence.",
+        "Now enter the situation with the worst case already processed."
+      ],
+      your_version: "Your emotional spikes before situations come from an unexamined worst case. This formula makes you face it before it arrives, so it loses its power in the room.",
+      mapped: "Fear_weight = f(unexamined_worst_case) -> examine first -> Fear_weight decreases -> R improves"
+    },
+    {
+      name: "The Harvey Principle",
+      source: "Suits -- your own insight",
+      equation: "Options = f(preparation) where Options > 1 always",
+      variables: { "Options": "number of responses available to you", "preparation": "simulations run beforehand" },
+      when: "When someone frames a situation as if you have only one choice",
+      steps: [
+        "Recognise the frame. Someone presenting one option is controlling the situation through your belief.",
+        "Pause. Ask internally: what are the actual options here?",
+        "You always have at least three: accept, reject, reframe entirely.",
+        "The person with more options controls the situation.",
+        "Your simulations build your options. The more you run, the more you have."
+      ],
+      your_version: "You've been accepting other people's frames under pressure. This formula makes the recognition automatic -- the moment someone presents one option, your trained brain immediately generates alternatives.",
+      mapped: "Control = Options(you) / Options(them) -- always make this ratio > 1"
+    }
+  ],
+
+  communicate: [
+    {
+      name: "NVC -- Nonviolent Communication",
+      source: "Marshall Rosenberg",
+      equation: "Connection = Observe + Feel + Need + Request",
+      variables: { "Observe": "what actually happened, no judgment", "Feel": "your emotional response", "Need": "what you actually need", "Request": "one specific concrete ask" },
+      when: "Any difficult conversation -- with boss, client, colleague, anyone",
+      steps: [
+        "OBSERVE: state what happened without evaluation. 'When you called me in' not 'when you attacked me'.",
+        "FEEL: name the actual emotion. 'I felt anxious' not 'I felt like you were blaming me'.",
+        "NEED: identify what you needed. 'I needed space to explain the context.'",
+        "REQUEST: make one specific ask. 'Could I have 5 minutes to walk you through my thinking?'"
+      ],
+      your_version: "Your boss cabin situation -- you gave him the storm instead of this formula. O: I took a day off. F: I was mentally exhausted. N: I needed to reset. R: I'm back and functioning now. Fifteen words. Done.",
+      mapped: "R_quality = Observe(stripped) + Feel(named) + Need(clear) + Request(specific)"
+    },
+    {
+      name: "The One Point Protocol",
+      source: "Your own insight from this system",
+      equation: "Communication_effectiveness = 1/n where n = number of points made",
+      variables: { "n": "number of points you try to make", "1": "the single point they actually need" },
+      when: "Every time you need to communicate under pressure",
+      steps: [
+        "Before speaking -- ask: what does this person actually need to hear right now?",
+        "Strip everything else. Context, explanation, defence, history -- all of it.",
+        "One sentence. Maximum fifteen words.",
+        "Deliver that. Stop.",
+        "Wait for their response before adding anything else."
+      ],
+      your_version: "Your communication collapses when n gets large. Emotion inflates n. This formula forces n=1 before you open your mouth. Practice in the Train chamber daily until it's automatic.",
+      mapped: "Effective_R = f(1/n) -- minimise n, maximise impact"
+    },
+    {
+      name: "PREP Framework",
+      source: "Public Speaking -- widely used",
+      equation: "Clarity = Point + Reason + Example + Point",
+      variables: { "Point": "your single claim", "Reason": "why it's true", "Example": "one concrete instance", "Point": "restate the claim" },
+      when: "When you need to make a case -- to a boss, a client, in a critique",
+      steps: [
+        "STATE the point in one sentence.",
+        "Give ONE reason it's correct.",
+        "Give ONE specific example -- from your work, your experience.",
+        "Restate the point in different words.",
+        "Stop talking."
+      ],
+      your_version: "When your work is being questioned -- this is your structure. Not defence, not explanation. Point, reason, example, point. Thirty seconds. You've made your case. Now you wait.",
+      mapped: "Persuasion = P(clear) + R(single) + E(specific) + P(restated)"
+    }
+  ],
+
+  emotion: [
+    {
+      name: "The STOP Technique",
+      source: "Mindfulness-Based Cognitive Therapy",
+      equation: "Reset = Stop + Take_breath + Observe + Proceed",
+      variables: { "Stop": "physical pause", "Take_breath": "one full breath", "Observe": "name what you're feeling", "Proceed": "choose your response" },
+      when: "The moment you feel E rising -- before you speak, before you react",
+      steps: [
+        "STOP. Literally stop moving for one second.",
+        "TAKE one slow breath. This activates the parasympathetic nervous system -- it physically reduces the emotional spike.",
+        "OBSERVE: name the emotion silently. 'This is anxiety.' 'This is defensiveness.' Naming it reduces its intensity.",
+        "PROCEED: now choose your response from a slightly clearer place."
+      ],
+      your_version: "Your E variable dominates your equation. This is the fastest formula to reduce E in real time. Four seconds total. Builds into automatic response with practice.",
+      mapped: "E_reduced = Stop(1s) + Breath(1) + Name(emotion) -> R improves"
+    },
+    {
+      name: "Cognitive Defusion",
+      source: "Acceptance and Commitment Therapy -- Steven Hayes",
+      equation: "Detachment = observe(thought) not merge(thought)",
+      variables: { "observe": "watching the thought from outside", "merge": "becoming the thought" },
+      when: "When a thought or feeling is dominating your mind and blocking clear thinking",
+      steps: [
+        "Instead of 'I am anxious' -- say 'I notice I am having the feeling of anxiety.'",
+        "Instead of 'I will fail' -- say 'I notice I am having the thought that I will fail.'",
+        "The language shift creates space between you and the thought.",
+        "You are not the thought. You are the one observing it.",
+        "From that position you can choose what to do with it."
+      ],
+      your_version: "Your wave collapses because you merge with the observation. This formula keeps you in wave state longer -- you observe the emotion without becoming it. This is detachment made practical.",
+      mapped: "Wave_state = observe(E) -- merge(E) collapses to particle, observe(E) stays wave"
+    },
+    {
+      name: "The Name It to Tame It",
+      source: "Neuroscience -- Daniel Siegel",
+      equation: "Emotional_intensity = f(1/labelling_precision)",
+      variables: { "labelling_precision": "how accurately you name the emotion" },
+      when: "Whenever emotion is overriding thinking",
+      steps: [
+        "When emotion spikes -- stop and name it precisely.",
+        "Not 'bad' or 'upset'. Be specific: 'shame', 'humiliation', 'fear of judgment', 'frustration at being misunderstood'.",
+        "The more precise the label, the more the prefrontal cortex engages.",
+        "The prefrontal cortex is your thinking brain. Labelling activates it and reduces amygdala response.",
+        "You are literally using language to rewire the emotional response in real time."
+      ],
+      your_version: "Your emotional load entries in the system are already doing this -- but now you know why it works. Every time you name what you're carrying precisely in Load, you're reducing its intensity neurologically.",
+      mapped: "E_intensity  1/label_precision -- more precise naming = lower emotional override"
+    }
+  ],
+
+  detach: [
+    {
+      name: "The Circle of Control",
+      source: "Stoic Philosophy -- Epictetus",
+      equation: "Peace = f(focus_on_circle_in) -- f(focus_on_circle_out)",
+      variables: { "circle_in": "what you can directly control", "circle_out": "what you cannot control" },
+      when: "When you're carrying something that isn't yours or can't control",
+      steps: [
+        "Draw two circles mentally. Inner circle: your thoughts, your actions, your responses.",
+        "Outer circle: other people's opinions, outcomes, past events, other people's behaviour.",
+        "Anything in the outer circle -- you cannot control it. Energy spent there is wasted.",
+        "Ask of everything you're carrying: inner or outer circle?",
+        "Redirect all energy to the inner circle only."
+      ],
+      your_version: "Your detachment exercise in Train is built on this. When you write 'this isn't mine because' -- you're doing this formula. Now you have the full framework behind the exercise.",
+      mapped: "Energy_efficiency = Actions(circle_in) / Actions(circle_in + circle_out) -- maximise this ratio"
+    },
+    {
+      name: "Memento Mori -- Perspective Reset",
+      source: "Stoic Philosophy",
+      equation: "Importance(situation) = f(significance_in_5_years)",
+      variables: { "significance_in_5_years": "whether this will matter in 5 years" },
+      when: "When something feels catastrophic in the moment",
+      steps: [
+        "Ask: will this matter in 5 years?",
+        "If no -- its actual importance is low. Your emotional response is disproportionate.",
+        "If yes -- then it deserves energy. But still not panic.",
+        "This reframe physically changes the perceived stakes of the situation.",
+        "Lower perceived stakes = lower E = better R."
+      ],
+      your_version: "Your emotional spikes are often disproportionate to actual stakes. This formula recalibrates stakes in real time. Not dismissing -- recalibrating.",
+      mapped: "Perceived_stakes = f(5yr_significance) -- recalibrate to reduce E inflation"
+    }
+  ],
+
+  think: [
+    {
+      name: "First Principles Thinking",
+      source: "Aristotle -- applied by Elon Musk, Richard Feynman",
+      equation: "Truth = decompose(assumption) -> rebuild(from_facts)",
+      variables: { "assumption": "what you believe without questioning", "facts": "what you can verify directly" },
+      when: "When you're stuck, when a solution isn't working, when you need to think clearly",
+      steps: [
+        "Identify the assumption you're working from.",
+        "Ask: is this actually true, or do I just believe it?",
+        "Break it down to the most basic facts that can be verified.",
+        "Rebuild your understanding from those facts upward.",
+        "This is your Map chamber in operation -- variables and dependencies."
+      ],
+      your_version: "This is your natural mode when you're calm. Your architect's brain does this automatically with spaces. The formula is to apply it to situations and people the same way you apply it to buildings.",
+      mapped: "Solution = rebuild(verified_facts) not iterate(inherited_assumptions)"
+    },
+    {
+      name: "Inversion",
+      source: "Charlie Munger -- Jacobi the mathematician",
+      equation: "Solution = solve(opposite_problem)",
+      variables: { "opposite_problem": "what would make this situation worse / fail guaranteed" },
+      when: "When you can't see the solution to a problem",
+      steps: [
+        "Instead of asking 'how do I succeed here?' ask 'how would I guarantee failure?'",
+        "List everything that would make this situation worse.",
+        "Avoid all of those things.",
+        "What remains is the path forward.",
+        "This is your Critical Thinking exercise taken one step further."
+      ],
+      your_version: "Your critical thinking training already uses this -- arguing against yourself. Now you have the full framework. Apply it in Map when variables are unclear: what variables would guarantee R=0? Then avoid them.",
+      mapped: "R_optimal = f(avoid(R=0_conditions)) -- invert the problem"
+    },
+    {
+      name: "The Feynman Technique",
+      source: "Richard Feynman",
+      equation: "Understanding = explain(concept) as if to a 12-year-old",
+      variables: { "concept": "anything you think you understand", "gap": "the point where your explanation breaks down" },
+      when: "When you need to communicate complex ideas simply -- to clients, bosses, anyone",
+      steps: [
+        "Take the concept you need to communicate.",
+        "Explain it in simple language without jargon.",
+        "Where you struggle to explain -- that's where your own understanding has a gap.",
+        "Fill the gap. Then re-explain.",
+        "Repeat until the explanation is clear to anyone."
+      ],
+      your_version: "Your vision doesn't land with people because you're communicating at your level of understanding, not theirs. This formula bridges that gap. Your architectural eye sees things they can't -- your job is to build the bridge, not expect them to jump.",
+      mapped: "Communication_landing = f(explain_at_their_level) not f(explain_at_your_level)"
+    }
+  ],
+
+  habit: [
+    {
+      name: "Habit Stacking",
+      source: "James Clear -- Atomic Habits",
+      equation: "New_habit = After(existing_habit) + new_behaviour",
+      variables: { "existing_habit": "something you already do automatically", "new_behaviour": "the habit you want to build" },
+      when: "When building any new daily practice",
+      steps: [
+        "Identify a habit you already do without thinking -- run, brush teeth, make coffee.",
+        "Attach the new behaviour immediately after.",
+        "Formula: 'After I [existing habit], I will [new habit].'",
+        "For you: 'After my run, I will open the system for 20 minutes.'",
+        "The existing habit triggers the new one automatically. No willpower needed."
+      ],
+      your_version: "Your run is already happening. The training system attaches to it. After run -> system. That's the whole strategy. One decision made now, automatic forever.",
+      mapped: "P(new_habit) = P(existing_habit) x trigger_strength -- stack on a strong existing trigger"
+    },
+    {
+      name: "The Two-Minute Rule",
+      source: "James Clear -- Atomic Habits",
+      equation: "Starting = reduce(habit) to 2-minute version",
+      variables: { "2-minute version": "the absolute smallest possible version of the habit" },
+      when: "When you're avoiding starting something",
+      steps: [
+        "Reduce the habit to something that takes two minutes maximum.",
+        "Not 'train for 20 minutes' -- 'open the system and write one sentence'.",
+        "Not 'go for a run' -- 'put on running shoes'.",
+        "The point is not to do two minutes. The point is that starting is the obstacle.",
+        "Once started, you almost always continue."
+      ],
+      your_version: "On the days you don't feel like opening the system -- the two-minute version is opening it and writing one word in Load. That's the whole commitment. Everything else is optional.",
+      mapped: "P(starting) = 1 when friction -> 0 -- minimise the activation energy"
+    },
+    {
+      name: "Identity-Based Habits",
+      source: "James Clear -- Atomic Habits",
+      equation: "Identity = sum(votes) where vote = each_rep_completed",
+      variables: { "votes": "each time you act in line with the person you want to become", "identity": "who you are based on accumulated evidence" },
+      when: "When motivation drops and you can't see why you're doing this",
+      steps: [
+        "Stop thinking about outcomes. Start thinking about identity.",
+        "Not 'I want to communicate better' but 'I am someone who finds the one point.'",
+        "Each training rep is a vote for that identity.",
+        "You don't need 100% of the votes. Just the majority.",
+        "After enough votes -- the identity is real. Not aspirational. Real."
+      ],
+      your_version: "You described yourself as having missed a part of life. This formula reframes that entirely. You're not catching up. You're casting votes for a new identity starting now. Each simulation is one vote. Each morning training is one vote.",
+      mapped: "New_identity = sum(reps) / total_possible -- consistency matters more than perfection"
+    }
+  ]
+};
+
+let currentFormCat = 'pressure';
+
+function setFormCat(el) {
+  document.querySelectorAll('#formula-cats .ex-tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  currentFormCat = el.dataset.cat;
+  renderFormulas();
+}
+
+function renderFormulas() {
+  const cards = document.getElementById('formula-cards');
+  const formulas = FORMULAS[currentFormCat] || [];
+
+  cards.innerHTML = formulas.map((f, i) => `
+    <div class="formula-card" id="fc-${currentFormCat}-${i}">
+      <div class="formula-header" onclick="toggleFormula('${currentFormCat}-${i}')">
+        <div>
+          <div class="formula-name">${f.name}</div>
+          <div class="formula-source">${f.source}</div>
+        </div>
+        <div class="formula-eq">${f.equation.slice(0, 50)}${f.equation.length > 50 ? '...' : ''}</div>
+        <div class="chevron-f"></div>
+      </div>
+      <div class="formula-body" id="fb-${currentFormCat}-${i}" style="display:none;">
+
+        <div style="background:rgba(56,204,170,0.04);border:1px solid rgba(56,204,170,0.15);padding:14px 18px;margin-bottom:16px;">
+          <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--form);margin-bottom:6px;">Formula</div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink);letter-spacing:0.04em;">${f.equation}</div>
+        </div>
+
+        ${f.mapped ? `
+        <div style="background:rgba(138,90,204,0.04);border:1px solid rgba(138,90,204,0.15);padding:12px 18px;margin-bottom:16px;">
+          <div style="font-size:7px;letter-spacing:0.3em;text-transform:uppercase;color:var(--map);margin-bottom:6px;">Mapped to your variables</div>
+          <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2);letter-spacing:0.04em;">${f.mapped}</div>
+        </div>` : ''}
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:7px;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-4);margin-bottom:8px;">When to use</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--ink-3);line-height:1.5;">${f.when}</div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:7px;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-4);margin-bottom:10px;">Steps</div>
+          ${f.steps.map((s,si) => `
+            <div style="display:grid;grid-template-columns:20px 1fr;gap:8px;margin-bottom:8px;align-items:start;">
+              <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--form);">${si+1}</div>
+              <div style="font-family:'Instrument Serif',serif;font-size:14px;color:var(--ink);line-height:1.5;">${s}</div>
+            </div>`).join('')}
+        </div>
+
+        <div style="border-left:2px solid var(--form);padding:12px 16px;margin-bottom:16px;">
+          <div style="font-size:7px;letter-spacing:0.25em;text-transform:uppercase;color:var(--form);margin-bottom:6px;">For you specifically</div>
+          <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--ink-2);line-height:1.55;">${f.your_version}</div>
+        </div>
+
+        <button class="btn-ghost" onclick="practiseFormula('${currentFormCat}', ${i})" style="color:var(--form);text-decoration-color:var(--form);">Add to today's training -></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleFormula(key) {
+  const body = document.getElementById('fb-' + key);
+  const card = document.getElementById('fc-' + key);
+  const chevron = card.querySelector('.chevron-f');
+  const shown = body.style.display !== 'none';
+  body.style.display = shown ? 'none' : 'block';
+  chevron.style.transform = shown ? '' : 'rotate(90deg)';
+}
+
+function practiseFormula(cat, idx) {
+  const f = FORMULAS[cat][idx];
+  if(!f) return;
+  // Add to training log as a formula practice entry
+  const trainLog = JSON.parse(localStorage.getItem('dr_train') || '[]');
+  trainLog.unshift({
+    date: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short'}),
+    timestamp: Date.now(),
+    ex: -1,
+    skill: 'formula',
+    data: { formula: f.name, source: f.source, equation: f.equation }
+  });
+  localStorage.setItem('dr_train', JSON.stringify(trainLog));
+  // Visual confirmation
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--form);padding:14px 24px;z-index:9999;font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--form);animation:rise 0.3s ease both;';
+  msg.textContent = f.name + ' -- added to training log';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
+async function applyFormula() {
+  const sit = document.getElementById('form-situation').value.trim();
+  if(!sit) return;
+
+  const think = document.getElementById('form-think');
+  const resp  = document.getElementById('form-resp');
+  think.classList.add('on');
+  resp.classList.remove('on');
+
+  // Build formula library summary for the AI
+  const allFormulas = Object.values(FORMULAS).flat().map(f =>
+    `${f.name} (${f.source}): ${f.equation} | Use when: ${f.when}`
+  ).join('\n');
+
+const sys = `You are the Formulas engine inside THE SYSTEM for ${WHO}  You have access to a library of proven frameworks across six categories: pressure handling, communication, emotion regulation, detachment, clear thinking, and habit building.  Your job: read the user's situation, identify the ONE formula from the library that is most precisely matched to what they need right now, and show them exactly how to apply it -- mapped to their specific variables (E=emotional state, R=response quality, C=clarity of one point, P=preparation, A=authority level).  Be specific. Show the formula. Show the exact steps mapped to their situation. Show what their variables look like in this specific case. End with one sentence: the first thing to do in the next 60 seconds.  Available formulas: ${allFormulas}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        system: sys,
+        messages: [{ role: 'user', content: `My situation: ${sit}` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text||'').join('') || '';
+    document.getElementById('form-resp-body').innerHTML =
+      text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+    resp.classList.add('on');
+  } catch(e) {
+    document.getElementById('form-resp-body').textContent = 'Something went wrong. Try again.';
+    resp.classList.add('on');
+  }
+  think.classList.remove('on');
+}
+
+function initFormulas() {
+  renderFormulas();
+}
+
+const _go4 = go;
+go = function(c) { _go4(c); if(c==='formulas') initFormulas(); };
+const _enter4 = enter;
+enter = function(c) { _enter4(c); if(c==='formulas') initFormulas(); };
+
+
+// ====================================
+// INDEPENDENCE LAYER
+// Self-Check mode + Graduation tracker
+// The system works toward its own obsolescence
+// ====================================
+
+let currentMode = 'ai'; // 'ai' or 'self'
+
+const GRAD_SKILLS = [
+  { key: 'load',        label: 'Reading yourself',    target: 10 },
+  { key: 'onepoint',    label: 'Finding the one point',target: 10 },
+  { key: 'detachment',  label: 'Letting go',          target: 10 },
+  { key: 'patterns',    label: 'Seeing patterns',     target: 10 },
+  { key: 'critical',    label: 'Thinking critically', target: 10 },
+  { key: 'sim_boss',    label: 'Boss situations',     target: 8  },
+  { key: 'sim_client',  label: 'Client situations',   target: 8  },
+  { key: 'sim_critique',label: 'Critique situations', target: 8  },
+  { key: 'sim_conflict',label: 'Conflict situations', target: 8  },
+];
+
+function setMode(mode) {
+  currentMode = mode;
+  localStorage.setItem('dr_mode', mode);
+
+  document.querySelectorAll('.mode-toggle').forEach(b => b.classList.remove('on'));
+  document.getElementById('mode-' + mode).classList.add('on');
+
+  // Show/hide self-check panels
+  document.querySelectorAll('[id$="-selfcheck"]').forEach(el => {
+    el.style.display = mode === 'self' ? 'block' : 'none';
+  });
+
+  // Update prompt text to indicate mode
+  const lp = document.getElementById('load-prompt');
+  if(lp){
+    if(mode === 'self'){
+      lp.textContent = "What's actually in your head? Try naming it yourself first -- then the AI will show you what it sees.";
+    } else {
+      lp.textContent = "What's actually in your head right now? Not what you think you should say. The raw thing.";
+    }
+  }
+}
+
+function revealAILoad() {
+  // In self-check mode -- user wrote their own read first
+  // Now show them the AI's read for comparison
+  const selfText = document.getElementById('load-self-in').value.trim();
+  const mainText = document.getElementById('load-in').value.trim();
+
+  if(!mainText && !selfText) return;
+
+  // Log the self-check attempt
+  logSelfCheckAttempt('load', selfText);
+
+  // Run the normal load process
+  runLoad();
+}
+
+function logSelfCheck(skill) {
+  // User says they got it themselves -- increment independence counter
+  const counts = JSON.parse(localStorage.getItem('dr_independence') || '{}');
+  const key = skill;
+  counts[key] = (counts[key] || 0) + 1;
+  localStorage.setItem('dr_independence', JSON.stringify(counts));
+
+  // Visual feedback
+  renderGraduationGrid();
+
+  // Check if graduated
+  const skillDef = GRAD_SKILLS.find(s => s.key === key);
+  if(skillDef && counts[key] >= skillDef.target){
+    showGraduation(skillDef.label);
+  }
+}
+
+function logSelfCheckAttempt(skill, selfAnswer) {
+  const attempts = JSON.parse(localStorage.getItem('dr_self_attempts') || '[]');
+  attempts.unshift({
+    skill,
+    selfAnswer: selfAnswer.slice(0, 200),
+    date: new Date().toLocaleDateString('en-IN', {day:'numeric',month:'short'}),
+    timestamp: Date.now()
+  });
+  if(attempts.length > 100) attempts.pop();
+  localStorage.setItem('dr_self_attempts', JSON.stringify(attempts));
+}
+
+function showGraduation(skillName) {
+  // Brief graduation moment -- understated, earned
+  const msg = document.createElement('div');
+  msg.style.cssText = `
+    position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+    background:var(--surface);border:1px solid var(--train);
+    padding:16px 28px;z-index:9999;
+    font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.3em;
+    text-transform:uppercase;color:var(--train);
+    animation:rise 0.4s ease both;
+    box-shadow:0 0 20px rgba(56,168,204,0.15);
+  `;
+  msg.textContent = skillName + ' -- this skill is yours now';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 4000);
+}
+
+function renderGraduationGrid() {
+  const grid   = document.getElementById('graduation-grid');
+  if(!grid) return;
+  const counts = JSON.parse(localStorage.getItem('dr_independence') || '{}');
+
+  grid.innerHTML = GRAD_SKILLS.map(skill => {
+    const count    = counts[skill.key] || 0;
+    const pct      = Math.min(100, (count / skill.target) * 100);
+    const graduated= count >= skill.target;
+    return `
+      <div class="grad-skill ${graduated ? 'graduated' : ''}">
+        <div class="grad-skill-name">${skill.label}${graduated ? ' ' : ''}</div>
+        <div class="grad-bar-wrap">
+          <div class="grad-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="grad-count">${count}/${skill.target} self-solves${graduated ? ' -- yours' : ''}</div>
+      </div>`;
+  }).join('');
+}
+
+// Hook into simulation end to log sim-type self-checks
+const _endSim2 = endSim;
+endSim = async function() {
+  await _endSim2();
+  // After debrief -- ask if they handled it before reaching for phone
+  setTimeout(() => {
+    const simFeedback = document.getElementById('sim-feedback');
+    if(simFeedback && simFeedback.style.display !== 'none'){
+      const selfQ = document.createElement('div');
+      selfQ.style.cssText = 'margin-top:20px;padding-top:16px;border-top:1px solid var(--border);';
+      selfQ.innerHTML = `
+        <div style="font-size:7px;letter-spacing:0.25em;text-transform:uppercase;color:var(--ink-4);margin-bottom:10px;">Independence check</div>
+        <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--ink-3);margin-bottom:12px;">Did you know how to handle this before running the simulation?</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-ghost" onclick="logSelfCheck('sim_${simType}')" style="color:var(--reload);text-decoration-color:var(--reload);">Yes -- I already knew</button>
+          <button class="btn-ghost" style="color:var(--ink-4);">No -- I needed this</button>
+        </div>`;
+      simFeedback.appendChild(selfQ);
+    }
+  }, 600);
+};
+
+// Weekly reflection -- add independence insight
+const _runWeekly2 = runWeekly;
+runWeekly = async function() {
+  await _runWeekly2();
+  // After weekly reflection, show independence summary
+  const counts = JSON.parse(localStorage.getItem('dr_independence') || '{}');
+  const total  = Object.values(counts).reduce((a,b) => a+b, 0);
+  if(total > 0){
+    const body = document.getElementById('weekly-body');
+    const indep = document.createElement('div');
+    indep.style.cssText = 'margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--ink-3);font-family:DM Mono,monospace;letter-spacing:0.05em;';
+    indep.textContent = total + ' situations handled without AI this week.';
+    if(body) body.appendChild(indep);
+  }
+};
+
+// Init independence layer
+function initIndependence() {
+  const savedMode = localStorage.getItem('dr_mode') || 'ai';
+  setMode(savedMode);
+  renderGraduationGrid();
+}
+
+
+// ====================================
+// SOLVE -- behaviour as equation
+// Reads Simulate + Train data
+// Expresses as variables and formula
+// ====================================
+
+function toggleSolveDetail(){
+  const block = document.getElementById('solve-vars-block');
+  const btn   = document.getElementById('solve-detail-btn');
+  const shown = block.style.display !== 'none';
+  block.style.display = shown ? 'none' : 'block';
+  btn.textContent     = shown ? 'Show variable breakdown ->' : 'Hide breakdown';
+}
+
+async function runSolve(){
+  const btn   = document.getElementById('solve-btn');
+  const think = document.getElementById('solve-think');
+  const result= document.getElementById('solve-result');
+  btn.disabled = true;
+  think.classList.add('on');
+  result.style.display = 'none';
+
+  // == Gather all data ==
+
+  // Simulation log
+  const simLog   = JSON.parse(localStorage.getItem('dr_simlog') || '[]');
+  const simData  = simLog.slice(0, 15).map(s =>
+    `Type: ${s.type} | Difficulty: ${s.diff} | Turns: ${s.turns} | Debrief: ${s.feedback}`
+  ).join('\n');
+
+  // Training log
+  const trainLog = JSON.parse(localStorage.getItem('dr_train') || '[]');
+  const trainData = trainLog.slice(0, 30).map(e => {
+    const val = e.data.response || e.data.pattern || e.data.emotional ||
+                e.data.argument || e.data.carrying || e.data.point || '';
+    return `Skill: ${e.skill} | Entry: ${val.slice(0,100)}`;
+  }).join('\n');
+
+  // Load entries
+  const loadData = D.arsenal.filter(e => !e.fromSim).slice(0, 8)
+    .map(e => e.preview).join(' | ');
+
+  // One point entries from training
+  const opEntries = trainLog.filter(e => e.skill === 'onepoint').slice(0, 5).map(e =>
+    `Situation: ${(e.data.situation||'').slice(0,60)} | Point missed: ${(e.data.gap||'').slice(0,60)}`
+  ).join('\n');
+
+  // Current map variables if any
+  syncVars();
+  const mapVars = D.vars.filter(v => v.name).map(v =>
+    `${v.sym}: ${v.name} (${v.known === true ? 'known' : v.known === false ? 'unknown' : 'unclear'})`
+  ).join(', ');
+
+  const hasSims  = simLog.length > 0;
+  const hasTrain = trainLog.length > 0;
+
+  if(!hasSims && !hasTrain && !D.arsenal.length){
+    think.classList.remove('on');
+    btn.disabled = false;
+    document.getElementById('solve-equation').textContent = 'R = f(?) -- no data yet';
+    document.getElementById('solve-insight').innerHTML = 'Run some simulations and training reps first. The more data you generate, the more accurate your equation becomes.';
+    result.style.display = 'block';
+    return;
+  }
+
+  const sys = `You are the Solve engine inside THE SYSTEM for ${WHO}
+
+Your job: read behavioural data from simulations and training, then express this person's behaviour as a mathematical equation -- like an algebraic formula. This speaks directly to how he thinks. He loves maths, trigonometry, calculus, algebra. When he sees his behaviour expressed as an equation, it clicks in a way prose never does.
+
+The output equation: R = f(variables) where R is Response Quality -- how well he handled the situation.
+
+You must:
+1. Identify 4-6 variables that actually appear in his data. Name them with single letters. Define each one clearly.
+2. Show the equation with approximate coefficients -- which variables have the most weight.
+3. Identify which variable is the CRITICAL one -- the one that when it spikes or drops, R collapses regardless of everything else.
+4. Show 1-2 specific instances from his data that prove the equation.
+5. Give one sentence: the variable he needs to solve first.
+
+IMPORTANT: Express the equation literally -- like: R = C(1 - E) + P - A where you define each letter. Make it look like real mathematics. Use actual variable letters, coefficients, operators. This is not metaphor. This is his actual behavioural formula derived from data.
+
+Then in plain prose: what this means practically. Under 180 words for the prose section.
+
+Respond in this exact JSON format:
+{
+  "equation": "R = ... (the actual mathematical expression)",
+  "variables": [
+    {"letter": "R", "name": "Response Quality", "description": "...", "weight": "output"},
+    {"letter": "E", "name": "...", "description": "...", "weight": "high/medium/low", "known": true/false}
+  ],
+  "critical_variable": "letter",
+  "critical_reason": "one sentence",
+  "insight": "plain prose explanation under 180 words",
+  "solve_first": "one sentence -- the one variable to work on"
+}`;
+
+  const msg = `DATA FROM SIMULATIONS:\n${simData || 'none yet'}\n\nDATA FROM TRAINING:\n${trainData || 'none yet'}\n\nEMOTIONAL LOAD ENTRIES:\n${loadData || 'none yet'}\n\nONE POINT TRAINING:\n${opEntries || 'none yet'}\n\nCURRENT MAP VARIABLES (if any):\n${mapVars || 'none defined'}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system:     sys,
+        messages:   [{ role: 'user', content: msg }]
+      })
+    });
+
+    const data = await res.json();
+    const raw  = data.content?.map(b => b.text || '').join('') || '{}';
+
+    let parsed;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      // Fallback if JSON parsing fails
+      parsed = {
+        equation: 'R = f(E, C, P)',
+        variables: [
+          {letter:'R', name:'Response Quality', description:'How well the situation was handled', weight:'output'},
+          {letter:'E', name:'Emotional State', description:'How loaded emotionally coming in', weight:'high', known:false},
+          {letter:'C', name:'Clarity of One Point', description:'Whether the core need was identified', weight:'high', known:false},
+          {letter:'P', name:'Preparation', description:'Context and prior knowledge of the situation', weight:'medium', known:false}
+        ],
+        critical_variable: 'E',
+        critical_reason: 'When emotional state is high, response quality collapses regardless of other variables.',
+        insight: raw.slice(0, 400),
+        solve_first: 'Reduce E before entering any high-stakes situation.'
+      };
+    }
+
+    // Render equation
+    document.getElementById('solve-equation').textContent = parsed.equation || 'R = f(?)';
+
+    // Render variables table
+    const vars = parsed.variables || [];
+    const varsHtml = vars.map(v => `
+      <div style="display:grid;grid-template-columns:32px 120px 1fr auto;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-family:'DM Mono',monospace;font-size:15px;color:var(--map);font-weight:400;">${v.letter}</div>
+        <div style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-2);">${v.name}</div>
+        <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:13px;color:var(--ink-3);">${v.description}</div>
+        <div style="font-size:7px;letter-spacing:0.15em;text-transform:uppercase;padding:3px 7px;border:1px solid ${v.weight==='high'?'var(--fire)':v.weight==='medium'?'var(--aim)':v.weight==='output'?'var(--map)':'var(--border)'};color:${v.weight==='high'?'var(--fire)':v.weight==='medium'?'var(--aim)':v.weight==='output'?'var(--map)':'var(--ink-4)'};">${v.weight}</div>
+      </div>`).join('');
+    document.getElementById('solve-vars-table').innerHTML = varsHtml;
+
+    // Render insight
+    const insightHtml = (parsed.insight || '').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+    document.getElementById('solve-insight').innerHTML = insightHtml
+      + (parsed.solve_first ? `<div style="margin-top:16px;padding:12px 16px;border-left:2px solid var(--map);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--map);">SOLVE FIRST: ${parsed.solve_first}</div>` : '');
+
+    result.style.display = 'block';
+    document.getElementById('solve-detail-btn').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('solve-equation').textContent = 'R = f(?) -- something went wrong';
+    document.getElementById('solve-insight').textContent = 'Try again.';
+    result.style.display = 'block';
+  }
+
+  think.classList.remove('on');
+  btn.disabled = false;
+}
+
+
+// ====================================
+// INTELLIGENCE LAYER
+// Connects Simulate -> Pattern Recognition -> Critical Thinking
+// ====================================
+
+function feedSimToIntelligence(simEntry, transcript, debrief) {
+  // Extract the user's responses from the transcript
+  const userLines = transcript.split('\n\n')
+    .filter(l => l.startsWith('YOU: '))
+    .map(l => l.replace('YOU: ', '').trim());
+
+  // Find the weakest response -- shortest or most emotional
+  // This becomes the Critical Thinking target
+  const weakestResponse = userLines.reduce((worst, line) => {
+    // Shorter responses often = freezing, longer = going overboard
+    const score = line.length < 20 ? 0 : line.length > 200 ? 0 : 1;
+    return score < 1 ? line : worst;
+  }, userLines[0] || '');
+
+  // Store simulation insight as a pattern entry
+  const patternEntry = {
+    text: `[SIM: ${simEntry.type}] ${debrief.slice(0, 200)}`,
+    preview: `[SIM: ${simEntry.type.slice(0,20)}] ${debrief.slice(0, 80)}`,
+    date: simEntry.date,
+    resolved: false,
+    fromSim: true,
+    simType: simEntry.type,
+    simDiff: simEntry.diff
+  };
+
+  // Add to arsenal so Pattern Recognition picks it up
+  D.arsenal.unshift(patternEntry);
+  if(D.arsenal.length > 40) D.arsenal.pop();
+  ls('dr_arsenal', D.arsenal);
+  renderArsenal();
+
+  // Store as a Critical Thinking target
+  const critTarget = {
+    text: weakestResponse || userLines[0] || 'No response captured',
+    preview: (weakestResponse || userLines[0] || '').slice(0, 90),
+    date: simEntry.date,
+    fromSim: true,
+    simType: simEntry.type,
+    context: `This was said during a ${simEntry.type} simulation at ${simEntry.diff} difficulty`
+  };
+
+  const critTargets = JSON.parse(localStorage.getItem('dr_crit_targets') || '[]');
+  critTargets.unshift(critTarget);
+  if(critTargets.length > 20) critTargets.pop();
+  ls('dr_crit_targets', critTargets);
+}
+
+// Override the Pattern Recognition exercise to include sim data
+function getPatternEntries() {
+  // Combine Load entries + simulation debriefs
+  const loadEntries = D.arsenal.filter(e => !e.fromSim).slice(0, 4);
+  const simEntries  = D.arsenal.filter(e => e.fromSim).slice(0, 2);
+  return [...loadEntries, ...simEntries].slice(0, 6);
+}
+
+// Override Critical Thinking to use sim responses when available
+function getCritTarget() {
+  const critTargets = JSON.parse(localStorage.getItem('dr_crit_targets') || '[]');
+  if(critTargets.length > 0) {
+    const target = critTargets[0];
+    return {
+      text: target.text,
+      context: target.context || '',
+      fromSim: target.fromSim || false,
+      simType: target.simType || ''
+    };
+  }
+  // Fall back to reload/arsenal entries
+  const last = D.reloads[0] || D.arsenal[0];
+  return { text: last ? last.preview : null, context: '', fromSim: false, simType: '' };
+}
+
+// Override weekly reflection to read across all chambers
+async function runWeekly() {
+  const trainLog  = JSON.parse(localStorage.getItem('dr_train') || '[]');
+  const simLog    = JSON.parse(localStorage.getItem('dr_simlog') || '[]');
+  if(trainLog.length < 3 && simLog.length < 1) return;
+
+  const think = document.getElementById('weekly-think');
+  const body  = document.getElementById('weekly-body');
+  think.classList.add('on'); body.innerHTML = '';
+
+  // Build cross-chamber summary
+  const week = trainLog.slice(0, 35);
+  const bySkill = {};
+  TRAIN_SKILLS.forEach(s => bySkill[s] = []);
+  week.forEach(e => { if(bySkill[e.skill]) bySkill[e.skill].push(e.data); });
+
+  const trainSummary = TRAIN_SKILLS.map(s => {
+    const entries = bySkill[s];
+    if(!entries.length) return null;
+    const texts = entries.map(d =>
+      d.response || d.pattern || d.emotional || d.argument || d.carrying || d.point || ''
+    ).filter(Boolean).join(' | ');
+    return `${s}: ${texts.slice(0, 180)}`;
+  }).filter(Boolean).join('\n\n');
+
+  // Recent simulation debriefs
+  const simSummary = simLog.slice(0, 5).map((s,i) =>
+    `Sim ${i+1} (${s.type}, ${s.diff}): ${s.feedback}`
+  ).join('\n');
+
+  // Recent Load entries
+  const loadSummary = D.arsenal.filter(e => !e.fromSim).slice(0, 5)
+    .map(e => e.preview).join(' | ');
+
+  const sys = `You are the intelligence layer inside THE SYSTEM for ${WHO}
+
+CROSS-CHAMBER WEEKLY REFLECTION: You have access to three streams of data:
+1. Daily training reps across six skills
+2. Simulation performance -- what happened when he was under real pressure
+3. Raw load entries -- what he's been carrying emotionally
+
+Your job: find the SINGLE most important pattern that connects all three. Not one observation per skill. The one thread that runs through everything -- his training, his simulations, his emotional dumps. What is he actually working on at a deeper level than he realises? Where is the gap between who he thinks he is under pressure and who he actually is? What is the one move that would unlock the most growth right now?
+
+Be specific. Reference actual content from the data. Be honest. This is the weekly intelligence debrief -- the most valuable feedback he gets. Under 200 words. Plain prose.`;
+
+  const msg = `TRAINING THIS WEEK:\n${trainSummary || 'No training entries yet'}\n\nSIMULATION HISTORY:\n${simSummary || 'No simulations yet'}\n\nLOAD ENTRIES:\n${loadSummary || 'No load entries yet'}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: sys,
+        messages: [{ role: 'user', content: msg }]
+      })
+    });
+    const d = await res.json();
+    const t = d.content?.map(b => b.text || '').join('') || '';
+    body.innerHTML = t
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  } catch(e) {
+    body.textContent = 'Something went wrong. Try again.';
+  }
+  think.classList.remove('on');
+}
+
+
+// ====================================
+// SIMULATE CHAMBER
+// ====================================
+
+let simType      = 'boss';
+let simDiff      = 'med';
+let simHistory   = [];
+let simActive    = false;
+let simTurnCount = 0;
+
+const SIM_TYPES = {
+  boss:     'Boss or authority figure',
+  client:   'Client who is difficult or dissatisfied',
+  critique: 'Design or work critique in front of others',
+  peer:     'Peer or colleague creating friction',
+  social:   'Social situation with new people',
+  conflict: 'Direct conflict or confrontation',
+  random:   'Unpredictable -- anything can happen'
+};
+
+const SIM_DIFFICULTY = {
+  low:  'Make this realistic but low pressure. The person is firm but not aggressive.',
+  med:  'Make this feel real. The person pushes back and does not accept vague answers.',
+  high: 'No mercy. Maximum pressure. Dismissive, aggressive, or relentless.'
+};
+
+function setSimType(el){
+  document.querySelectorAll('.sim-type').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on'); simType=el.dataset.t;
+}
+
+function setSimDiff(el){
+  document.querySelectorAll('#sim-diff .stake').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on'); simDiff=el.dataset.d;
+}
+
+function buildSimSystem(){
+  return `You are a simulation engine inside THE SYSTEM, built for ${WHO}
+
+SIMULATION MODE: Play a realistic character. Stay completely in character. Do NOT break character to give advice, reassure, or soften. Create real friction.
+
+Situation type: ${SIM_TYPES[simType]}
+Difficulty: ${SIM_DIFFICULTY[simDiff]}
+
+Rules:
+- Respond only as the character. No stage directions.
+- If he gives vague or emotional answers, press him.
+- Keep responses to 2-4 sentences -- the way people actually speak under pressure.
+- React naturally if he finds the right response or loses himself.`;
+}
+
+async function startSim(){
+  simHistory=[]; simActive=true; simTurnCount=0;
+  const btn=document.getElementById('sim-start-btn'); btn.disabled=true;
+  document.getElementById('sim-convo').style.display='block';
+  document.getElementById('sim-messages').innerHTML='';
+  document.getElementById('sim-feedback').style.display='none';
+  document.getElementById('sim-input-block').style.display='block';
+  document.getElementById('sim-response').value='';
+
+  const think=document.getElementById('sim-think');
+  think.classList.add('on');
+
+  const context=document.getElementById('sim-context').value.trim();
+  const setup=`Start the simulation. Set the scene in ONE sentence -- where we are, who you are, what just happened. Then deliver your opening line.${context?' Context: '+context:''}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:buildSimSystem(),messages:[{role:'user',content:setup}]})
+    });
+    const data=await res.json();
+    const text=data.content?.map(b=>b.text||'').join('')||'';
+    const lines=text.split('\n').filter(l=>l.trim());
+    const scenario=lines[0]||text;
+    const opening=lines.slice(1).join(' ')||text;
+    document.getElementById('sim-scenario').textContent=scenario;
+    document.getElementById('sim-scenario-label').textContent=SIM_TYPES[simType]+' -- '+simDiff;
+    simHistory.push({role:'assistant',content:text});
+    addSimMsg(opening||text,'them');
+  }catch(e){ addSimMsg('Simulation failed to start. Check connection.','them'); }
+
+  think.classList.remove('on'); btn.disabled=false;
+  document.getElementById('sim-response').focus();
+}
+
+async function sendSimResponse(){
+  const response=document.getElementById('sim-response').value.trim();
+  if(!response||!simActive) return;
+  simTurnCount++;
+  document.getElementById('sim-response').value='';
+  addSimMsg(response,'you');
+  simHistory.push({role:'user',content:response});
+
+  const think=document.getElementById('sim-think');
+  document.getElementById('sim-think-txt').textContent='In character...';
+  think.classList.add('on');
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:buildSimSystem(),messages:simHistory})
+    });
+    const data=await res.json();
+    const text=data.content?.map(b=>b.text||'').join('')||'';
+    simHistory.push({role:'assistant',content:text});
+    addSimMsg(text,'them');
+  }catch(e){ addSimMsg('...','them'); }
+
+  think.classList.remove('on');
+  if(simTurnCount>=6){
+    const hint=document.createElement('div');
+    hint.style.cssText='font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-4);text-align:center;padding:10px 0;';
+    hint.textContent=simTurnCount+' turns -- end the simulation to get your debrief';
+    document.getElementById('sim-messages').appendChild(hint);
+  }
+}
+
+async function endSim(){
+  if(!simActive) return;
+  simActive=false;
+  document.getElementById('sim-input-block').style.display='none';
+  const think=document.getElementById('sim-think');
+  document.getElementById('sim-think-txt').textContent='Reading your performance...';
+  think.classList.add('on');
+
+  const transcript=simHistory.map(m=>(m.role==='user'?'YOU: ':'THEM: ')+m.content).join('\n\n');
+
+  const debrief=`You are a debrief coach reviewing a simulation for ${WHO}
+
+Situation: ${SIM_TYPES[simType]} at difficulty: ${simDiff}.
+
+Give an honest, specific debrief covering exactly four things in plain prose, no bullet points:
+1. The ONE POINT -- what did the other person actually need? Did he find it?
+2. One moment where he handled it well.
+3. One moment where he lost himself or went overboard or went silent.
+4. One concrete thing to do differently next time.
+
+Be honest. Reference specific things he said. Under 200 words.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:debrief,messages:[{role:'user',content:'Transcript:\n\n'+transcript}]})
+    });
+    const data=await res.json();
+    const text=data.content?.map(b=>b.text||'').join('')||'';
+    document.getElementById('sim-feedback-body').innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+    document.getElementById('sim-feedback').style.display='block';
+
+    const simLog=JSON.parse(localStorage.getItem('dr_simlog')||'[]');
+    const simEntry = {date:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short'}),type:SIM_TYPES[simType],diff:simDiff,turns:simTurnCount,feedback:text.slice(0,120),fullFeedback:text,transcript:transcript};
+    simLog.unshift(simEntry);
+    if(simLog.length>30) simLog.pop();
+    localStorage.setItem('dr_simlog',JSON.stringify(simLog));
+    renderSimLog();
+
+    // == INTELLIGENCE LAYER ==
+    // Feed simulation data into Pattern Recognition and Critical Thinking
+    feedSimToIntelligence(simEntry, transcript, text);
+  }catch(e){ document.getElementById('sim-feedback-body').textContent='Debrief failed. Try again.'; document.getElementById('sim-feedback').style.display='block'; }
+
+  think.classList.remove('on');
+}
+
+function resetSim(){
+  simHistory=[]; simActive=false; simTurnCount=0;
+  document.getElementById('sim-convo').style.display='none';
+  document.getElementById('sim-messages').innerHTML='';
+  document.getElementById('sim-response').value='';
+  document.getElementById('sim-feedback').style.display='none';
+  document.getElementById('sim-input-block').style.display='block';
+  document.getElementById('sim-context').value='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function addSimMsg(text, who){
+  const container=document.getElementById('sim-messages');
+  const wrap=document.createElement('div');
+  wrap.className='sim-msg '+who;
+  const label=document.createElement('div');
+  label.className='sim-msg-label';
+  label.style.color=who==='them'?'var(--sim)':'var(--ink-4)';
+  label.textContent=who==='them'?'them':'you';
+  const body=document.createElement('div');
+  body.textContent=text;
+  wrap.appendChild(label); wrap.appendChild(body);
+  container.appendChild(wrap);
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function renderSimLog(){
+  const log=JSON.parse(localStorage.getItem('dr_simlog')||'[]');
+  const el=document.getElementById('sim-list');
+  if(!log.length){el.innerHTML='<div class="empty">No simulations yet.</div>';return;}
+  el.innerHTML=log.map(s=>`<div class="hist-row"><div class="hist-i" style="color:var(--sim);">${s.turns}T</div><div class="hist-t">${s.type} -- ${s.diff}</div><div class="hist-d">${s.date}</div></div>`).join('');
+}
+
+function initSim(){ renderSimLog(); }
+
+const _go3=go; go=function(c){ _go3(c); if(c==='sim') initSim(); };
+const _enter3=enter; enter=function(c){ _enter3(c); if(c==='sim') initSim(); };
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.ctrlKey&&simActive){ e.preventDefault(); sendSimResponse(); }
+});
+
+// ====================================
+// INIT
+// ====================================
+renderArsenal();
+renderReloads();
+tick();
+initIndependence();
+
+// Pulse tick every 2s for live elements
+setInterval(tick, 2000);
+// Ghost word pulse
+setInterval(()=>updateGhosts(chaos()), 28000);
+</script>
+</body>
+</html>
